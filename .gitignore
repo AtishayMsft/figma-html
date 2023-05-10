@@ -1,4 +1,5 @@
 plugin/**/*.js
+key.ts
 node_modules
 dist
 

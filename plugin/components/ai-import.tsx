@@ -13,6 +13,7 @@ import { useDev } from "../constants/use-dev";
 import { HelpOutline } from "@material-ui/icons";
 import { htmlToFigma } from "../../lib/html-to-figma";
 import { Configuration, OpenAIApi } from "openai";
+import { getMatchingFigma } from "../functions/figma-ai-search";
 
 const simpleOpenAIRequest = async (prompt: string) => {
   // create a new configuration object with the base path set to the Azure OpenAI endpoint
@@ -340,6 +341,12 @@ export function AiImport(props: {
     setLoading("Generating...");
 
     const useLocalHtmltoFigma = false;
+
+    // search figma for matching components
+    // The response is much quicker so keepin it first
+    const figmaResponse = await getMatchingFigma(prompt);
+    console.log('Matching figma id', figmaResponse);
+    // search end for matching components
 
     const gptResponse = await CallOpenAI(prompt)
     const responseText = await gptResponse.text();
