@@ -890,7 +890,7 @@ class App extends SafeComponent {
             indicatorColor="primary"
             textColor="primary"
           >
-            <Tab
+            {/* <Tab
               style={{
                 minHeight: 40,
                 minWidth: 0,
@@ -906,7 +906,7 @@ class App extends SafeComponent {
                   Export to Code
                 </span>
               }
-            />
+            /> */}
             <Tab
               style={{
                 minHeight: 40,
@@ -924,7 +924,7 @@ class App extends SafeComponent {
                 </span>
               }
             />
-            <Tab
+            {/* <Tab
               style={{
                 minHeight: 40,
                 minWidth: 0,
@@ -940,10 +940,10 @@ class App extends SafeComponent {
                   Import from web
                 </span>
               }
-            />
+            /> */}
           </Tabs>
           <Divider style={{ width: settings.ui.baseWidth }} />
-          <TabPanel
+{/*           <TabPanel
             style={{
               display: "flex",
               flexDirection: "column",
@@ -1380,9 +1380,9 @@ class App extends SafeComponent {
                 </span>
               </div>
             </>
-          </TabPanel>
+          </TabPanel> */}
 
-          <TabPanel value={this.tabIndex} index={1}>
+          <TabPanel value={this.tabIndex} index={0}>
             <AiImport
               clientStorage={this.clientStorage}
               updateClientStorage={(clientStorage) => {
@@ -1393,7 +1393,7 @@ class App extends SafeComponent {
           </TabPanel>
 
           {/* Import to Figma */}
-          <TabPanel value={this.tabIndex} index={2}>
+{/*           <TabPanel value={this.tabIndex} index={2}>
             <div
               style={{
                 display: "flex",
@@ -1908,7 +1908,7 @@ class App extends SafeComponent {
                 )}
               </form>
             </div>
-          </TabPanel>
+          </TabPanel> */}
 
           <div
             style={{
@@ -1945,7 +1945,7 @@ class App extends SafeComponent {
                 </a>
               </div>
             )}
-            <a
+            {/* <a
               style={{ display: "flex" }}
               href="https://www.builder.io?utm_source=figma"
               target="_blank"
@@ -2034,7 +2034,7 @@ class App extends SafeComponent {
               >
                 <FormattedMessage id="help" defaultMessage="Help" />
               </a>
-            </div>
+            </div> */}
           </div>
         </div>
       </IntlProvider>

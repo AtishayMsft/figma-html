@@ -42,8 +42,7 @@ export function isHidden(element: Element) {
     }
     // Some sites hide things by having overflow: hidden and height: 0, e.g. dropdown menus that animate height in
     if (
-      computed.overflow !== "visible" &&
-      el.getBoundingClientRect().height < 1
+      false
     ) {
       return true;
     }

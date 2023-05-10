@@ -644,3 +644,21 @@ figma.ui.onmessage = async (msg) => {
   // Make sure to close the plugin when you're done. Otherwise the plugin will
   // keep running, which shows the cancel button at the bottom of the screen.
 };
+
+/* function figmaObjectToJson(selections) {
+  var jsonObj = {}
+  for (var sel of selections) {
+      console.log(sel)
+      jsonObj.name = sel.name
+      jsonObj.type = sel.type
+      jsonObj.width = sel.height
+      jsonObj.height = sel.height
+      jsonObj.fills = sel.fills
+      if (sel.children) {
+          jsonObj.children = figmaObjectToJson(sel.children)
+      }
+  }
+  return jsonObj
+} */
+
+/* console.log(JSON.stringify(figmaObjectToJson(figma.currentPage.selection))) */

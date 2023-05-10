@@ -74,9 +74,6 @@ const getLayersForElement = (el: Element) => {
   const computedStyle = getComputedStyle(el);
 
   if (
-    (size(appliedStyles) ||
-      el instanceof HTMLImageElement ||
-      el instanceof HTMLVideoElement) &&
     computedStyle.display !== "none"
   ) {
     const rect = getBoundingClientRect(el);
@@ -170,8 +167,10 @@ export function htmlToFigma(
     processSvgUseElements(el);
 
     const els = generateElements(el);
+    console.log("Generated elements", els)
 
     els.forEach((el) => {
+      console.log(el)
       const elLayers = getLayersForElement(el);
       layers.push(...elLayers);
     });

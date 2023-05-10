@@ -14,8 +14,8 @@
   ],
   "scripts": {
     "dev:lib": "tsc -w",
-    "dev": "NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=development webpack --mode=development --watch",
-    "build": "tsc && NODE_OPTIONS=--openssl-legacy-provider NODE_ENV=production webpack --mode=production",
+    "dev": "webpack --mode=development --watch",
+    "build": "tsc && webpack --mode=development",
     "release:patch": "npm version patch && npm run build && npm publish",
     "release:dev": "npm version prerelease && npm run build && npm publish --tag dev"
   },
@@ -60,7 +60,9 @@
     "@emotion/core": "^10.0.28",
     "@types/lodash": "^4.14.168",
     "@types/pako": "^1.0.1",
+    "azure-openai": "^0.9.4",
     "lodash": "^4.17.21",
+    "openai": "^3.2.1",
     "pako": "^1.0.11",
     "react-intl": "^5.17.2",
     "traverse": "^0.6.6",

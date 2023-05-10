@@ -11,6 +11,53 @@ import { HelpTooltip } from "./help-tooltip";
 import { TextLink, TooltipTextLink } from "./text-link";
 import { useDev } from "../constants/use-dev";
 import { HelpOutline } from "@material-ui/icons";
+import { htmlToFigma } from "../../lib/html-to-figma";
+import { Configuration, OpenAIApi } from "openai";
+
+const simpleOpenAIRequest = async (prompt: string) => {
+  // create a new configuration object with the base path set to the Azure OpenAI endpoint
+  const configuration = new Configuration({
+    basePath: "https://hackathonmay.openai.azure.com/openai/deployments/gpt35turbo", //https://YOUR_AZURE_OPENAI_NAME.openai.azure.com/openai/deployments/YOUR_AZURE_OPENAI_DEPLOYMENT_NAME
+  });
+
+  const openai = new OpenAIApi(configuration);
+
+  const completion = await openai.createChatCompletion(
+    {
+      model: "gpt-35-turbo", // gpt-35-turbo is the model name which is set as part of the deployment on Azure Open AI
+      temperature: 1, // set the temperature to 1 to avoid the AI from repeating itself
+      messages: [
+        {
+          role: "system",
+          content: "Follow these instructions while computing and returning the results. Generate a html output for the asked query. Return only the html code block as output. Do not return any comments or explanation. Use native html5 controls and the latest microsoft fluent ui react styles in the results.",
+        },
+        {
+          role: "user",
+          content: prompt, // set the prompt to the user's input
+        },
+      ],
+      stream: false, // set stream to false to get the full response. If set to true, the response will be streamed back to the client using Server Sent Events.
+      // This demo does not use Server Sent Events, so we set stream to false.
+    },
+    {
+      headers: {
+        "api-key": "", // set the api-key header to the Azure Open AI key
+      },
+      params: {
+        "api-version": "2023-03-15-preview", // set the api-version to the latest version
+      },
+    }
+  );
+
+  return completion.data.choices[0].message?.content; // return the response from the AI, make sure to handle error cases
+};
+
+export async function CallOpenAI(prompt: string) {
+  // read the request body as JSON
+
+  const response = await simpleOpenAIRequest(prompt);
+  return new Response(response);
+}
 
 export const aiApiHost = useDev
   ? "http://localhost:4000"
@@ -57,7 +104,7 @@ export function AiImport(props: {
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const [previews, setPreviews] = React.useState(defaultPreviews());
   const images = React.useRef<string[]>(defaultImages());
-  const [prompt, setPrompt] = React.useState("a homepage hero");
+  const [prompt, setPrompt] = React.useState("a settings page");
   const [style, setStyle] = React.useState("everlane.com");
   const [openAiKey, setOpenAiKey] = React.useState(
     props.clientStorage?.openAiKey
@@ -155,12 +202,164 @@ export function AiImport(props: {
     );
   }
 
+  function fromString(str: string): HTMLElement {
+    const div = document.createElement('div');
+    div.innerHTML = str.trim();
+    document.body.innerHTML = "";
+    document.body.appendChild(div);
+    return div as HTMLElement;
+  }
+
+  function importHtmlToFigma(htmlContent: string) {
+    const htmlContent0 = `<div className="div">
+    <div className="div-2">Login</div>
+    <div className="div-3">Username</div>
+    <div className="div-4" />
+    <div className="div-5" />
+    <div className="div-6">Password</div>
+    <div className="div-7" />
+    <div className="div-8" />
+    <div className="div-9">Sign in</div>
+  </div>`
+
+  const htmlContent1 = `
+  <div class="container">
+    <div class="header">
+      <h1>Settings</h1>
+      <button class="ms-Button ms-Button--primary">Save</button>
+    </div>
+    <div class="body">
+      <h2>Personal Information</h2>
+      <div class="ms-TextField">
+        <label class="ms-Label">Name</label>
+        <input class="ms-TextField-field" type="text" />
+      </div>
+      <div class="ms-TextField">
+        <label class="ms-Label">Email</label>
+        <input class="ms-TextField-field" type="email" />
+      </div>
+      <div class="ms-TextField">
+        <label class="ms-Label">Phone Number</label>
+        <input class="ms-TextField-field" type="tel" />
+      </div>
+      <h2>Preferences</h2>
+      <div class="ms-ChoiceFieldGroup">
+        <div class="ms-ChoiceField">
+          <input class="ms-ChoiceField-input" type="checkbox" id="notifications" />
+          <label class="ms-ChoiceField-label" for="notifications">Receive notifications</label>
+        </div>
+        <div class="ms-ChoiceField">
+          <input class="ms-ChoiceField-input" style="border-color: #92a8d1;" type="checkbox" id="dark-mode" />
+          <label class="ms-ChoiceField-label" style="border-color: #92a8d1;" for="dark-mode">Dark mode</label>
+        </div>
+      </div>
+    </div>
+  </div>`
+
+    const htmlEle: HTMLElement = fromString(htmlContent);   
+    console.log(htmlEle)
+    const layers = htmlToFigma(htmlEle);
+
+    const jsonObj = {"layers": layers}
+
+    parent.postMessage(
+      {
+        pluginMessage: {
+          type: "import",
+          data: jsonObj,
+          blurImages: true,
+        },
+      },
+      "*"
+    );
+  }
+
+  function importHtmlviabuilderApi(htmlContent: string) {
+    fetch(`${apiHost}/api/v1/url-to-figma?width=1200`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        html: htmlContent,
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          console.error("Url-to-figma failed", res);
+          amplitude.track("import for ai error");
+          throw new Error("Url-to-figma failed");
+        }
+        amplitude.incrementUserProps("import_count");
+        amplitude.track("import to figma for ai", {
+          type: "url",
+        });
+        return res.json();
+      })
+      .then((data) => {
+        const layers = data.layers;
+        return Promise.all(
+          [data].concat(
+            layers.map(async (rootLayer: Node) => {
+              await traverseLayers(
+                rootLayer as any,
+                (layer: any) => {
+                  if (getImageFills(layer)) {
+                    return processImages(layer).catch((err) => {
+                      console.warn("Could not process image", err);
+                    });
+                  }
+                }
+              );
+            })
+          )
+        );
+      })
+      .then((data) => {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "import",
+              data: data[0],
+              blurImages: true,
+            },
+          },
+          "*"
+        );
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+        alert(err);
+      });
+  }
+
   async function onSubmit(e: React.FormEvent | React.KeyboardEvent) {
     e.preventDefault();
     setError(null);
     setLoading("Generating...");
 
-    if (abortControllerRef.current) {
+    const useLocalHtmltoFigma = false;
+
+    const gptResponse = await CallOpenAI(prompt)
+    const responseText = await gptResponse.text();
+    if (useLocalHtmltoFigma) {
+      const match = responseText.match(/<body.*>([^`]+)<\/body>/);
+      if (match) {
+        console.log(match[1]);
+        const htmlContent = match[1];
+        importHtmlToFigma(htmlContent);
+      }
+    } else {
+        const match = responseText.match(/```([^`]+)```/);
+        if (match) {
+          console.log(match[1]);
+          const htmlContent = match[1];
+          importHtmlviabuilderApi(htmlContent);
+        }
+    }
+
+  /*   if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
@@ -233,7 +432,7 @@ export function AiImport(props: {
       );
     } finally {
       setLoading(false);
-    }
+    } */
   }
 
   return (
@@ -269,7 +468,7 @@ export function AiImport(props: {
             onChange={(e) => setPrompt(e.currentTarget.value)}
             name="prompt"
           />
-          <h4>
+{/*           <h4>
             Style
             <HelpTooltip>
               <>
@@ -283,8 +482,8 @@ export function AiImport(props: {
             value={style}
             onChange={(e) => setStyle(e.currentTarget.value)}
             name="style"
-          />
-          <h4>
+          /> */}
+          {/* <h4>
             OpenAI Key
             <HelpTooltip interactive>
               <>
@@ -317,10 +516,10 @@ export function AiImport(props: {
             type="password"
             placeholder="sk-********************"
             name="key"
-          />
+          /> */}
 
           <Button
-            disabled={!(prompt && style && openAiKey)}
+            disabled={!(prompt && style)}
             style={{ marginTop: 15 }}
             variant="contained"
             type="submit"
@@ -359,7 +558,7 @@ export function AiImport(props: {
             )}
           </div>
         )}
-        <TextLink
+        {/* <TextLink
           target="_blank"
           href="https://www.builder.io/blog/ai-figma"
           style={{
@@ -377,7 +576,7 @@ export function AiImport(props: {
         >
           <HelpOutline style={{ marginRight: 10 }} />
           Learn how to use this feature
-        </TextLink>
+        </TextLink> */}
       </div>
       {hasPreviews() && (
         <div
