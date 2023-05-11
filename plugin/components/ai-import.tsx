@@ -69,6 +69,7 @@ export function AiImport(props: {
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState<boolean | string>(false);
   const [lastResponse, setlastResponse] = React.useState("");
+  const [matchingFigmaDesigns, setMatchingFigmaDesigns] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     if (props.clientStorage) {
@@ -301,8 +302,10 @@ export function AiImport(props: {
 
     // search figma for matching components
     // The response is much quicker so keepin it first
-    const figmaResponse = await getMatchingFigma(prompt);
-    console.log('Matching figma id', figmaResponse);
+    const matchingDesigns = await getMatchingFigma(prompt);
+    setMatchingFigmaDesigns(matchingDesigns);
+    console.log('Matching figma id', matchingDesigns);
+    window!.open(`https://www.figma.com/file/${matchingDesigns[0]}`, '_blank');
     // search end for matching components
 
     const gptResponse = await CallOpenAI(prompt, lastResponse)
@@ -439,7 +442,7 @@ export function AiImport(props: {
             onChange={(e) => setPrompt(e.currentTarget.value)}
             name="prompt"
           />
-{/*           <h4>
+          {/*           <h4>
             Style
             <HelpTooltip>
               <>
@@ -527,6 +530,29 @@ export function AiImport(props: {
             {typeof loading === "string" && (
               <div style={{ margin: "10 auto" }}>{loading}</div>
             )}
+          </div>
+        )}
+        {!loading && matchingFigmaDesigns.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              flexDirection: "column",
+            }}
+          >
+            <h3 style={{ marginBottom: 0 }}>Similar Designs</h3>
+            <ul>
+              {matchingFigmaDesigns.map((figmaId) => (
+                <li>
+                  <a
+                    href={`https://www.figma.com/file/${figmaId}`}
+                    target="_blank"
+                  >
+                    {figmaId}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
         {/* <TextLink
