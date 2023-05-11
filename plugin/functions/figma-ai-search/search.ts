@@ -64,15 +64,19 @@ export async function getMatchingResults(
   const promptEmbedding = await createEmbedding(inputPrompt);
 
   // create map of text against similarity score
-  const similarityScoreHash = getSimilarityScore(
+  const similarityScore = getSimilarityScore(
     promptMapWithEmbeddings,
     promptEmbedding
   );
-  console.log("similarityScoreHash -", similarityScoreHash);
+  console.log("similarityScore -", similarityScore);
 
-  // get text (i.e. key) from score map that has highest similarity score
-  const figmaId = Object.keys(similarityScoreHash).reduce((a, b) =>
-    similarityScoreHash[a] > similarityScoreHash[b] ? a : b
+  // sort similarity score map in descending order
+  const sortedSimilarityScore = Object.keys(similarityScore).sort(
+    (a, b) => similarityScore[b] - similarityScore[a]
   );
-  return figmaId;
+
+  console.log("sortedSimilarityScore -", sortedSimilarityScore);
+ 
+  // return top 5 results
+  return sortedSimilarityScore.slice(0, 3);
 }
