@@ -570,6 +570,7 @@ export function AiImport(props: {
               display: "flex",
               justifyContent: "center",
               flexDirection: "column",
+              marginLeft: 12
             }}
           >
             <h3 style={{ marginBottom: 0 }}>Similar Designs</h3>
