@@ -636,9 +636,9 @@ figma.ui.onmessage = async (msg) => {
 
     figma.viewport.scrollAndZoomIntoView([frameRoot]);
 
-    if (process.env.NODE_ENV !== "development") {
+/*     if (process.env.NODE_ENV !== "development") {
       figma.closePlugin();
-    }
+    } */
   }
 
   // Make sure to close the plugin when you're done. Otherwise the plugin will
