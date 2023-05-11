@@ -15,6 +15,9 @@ import { htmlToFigma } from "../../lib/html-to-figma";
 import { CallOpenAI } from "../functions/azure-open-ai";
 import { getMatchingFigma } from "../functions/figma-ai-search";
 import { last } from "lodash";
+import { initializeIcons, Callout, TooltipHost, Stack, List, Text, mergeStyleSets, TextField, PrimaryButton,Separator,FontIcon, IList } from '@fluentui/react';
+
+initializeIcons();
 
 export const aiApiHost = useDev
   ? "http://localhost:4000"
@@ -31,8 +34,60 @@ const tryJsonParse = (str: string) => {
   }
 };
 
+const copyToClipboard = (content: string) => {
+  const el = document.createElement("textarea");
+  el.value = content;
+  el.setAttribute("readonly", "");
+  el.style.position = "absolute";
+  el.style.left = "-9999px";
+  document.body.appendChild(el);
+  el.select();
+  el.setSelectionRange(0, 99999);
+  document.execCommand("copy");
+  document.body.removeChild(el);
+};
+
 function defaultPreviews() {
   return Array.from({ length: numPreviews }, () => "");
+}
+
+const classNames = mergeStyleSets({
+  itemCell: [
+    {
+      padding: 10,
+      boxSizing: 'border-box',
+      border: `1px solid`,
+      borderColor: '#e3f2ff',
+      margin: 10,
+      display: 'flex',
+      borderRadius: 10,
+      selectors: {
+        '&:hover': { background: "#e3f2ff" },
+      },
+    },
+  ],
+  header: {
+    marginTop: 10,
+    display: "flex"
+  },
+  commandBar: {
+    marginLeft: 10,
+    marginRight: 30,
+    paddingBottom: 4,
+    borderBottom: `4px solid`
+  },
+  container: {
+    overflow: 'auto',
+    maxHeight: 200,
+    height: 200
+  },
+  icon: {
+    fontSize: 20
+  }
+});
+
+interface IPrompt {
+  text: String;
 }
 
 function countInstancesOf(string: string, char: string) {
@@ -61,15 +116,35 @@ export function AiImport(props: {
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const [previews, setPreviews] = React.useState(defaultPreviews());
   const images = React.useRef<string[]>(defaultImages());
-  const [prompt, setPrompt] = React.useState("a settings page");
+  const [prompt, setPrompt] = React.useState<string>();
+  const [prompts, setPrompts] = React.useState<string[]>(["Design a home screen for an android music streaming app", "Design a login page"]);
   const [style, setStyle] = React.useState("everlane.com");
+  const listRef: React.RefObject<IList> = React.useRef(null);
   const [openAiKey, setOpenAiKey] = React.useState(
     props.clientStorage?.openAiKey
   );
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState<boolean | string>(false);
-  const [lastResponse, setlastResponse] = React.useState("");
   const [matchingFigmaDesigns, setMatchingFigmaDesigns] = React.useState<string[]>([]);
+
+  const onChangePrompt = React.useCallback(
+    (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+      setPrompt(newValue || '');
+    },
+    [],
+  );
+
+  const onPromptClick = async (index?: number) => index && copyToClipboard(prompts[index]);
+
+  const onRenderPrompt = (item?: IPrompt, index?:number): JSX.Element => {
+    return (
+     <TooltipHost content="Click to copy">
+      <div id={`prompt-${index}`} className={classNames.itemCell} data-is-focusable={true} onClick={() => onPromptClick(index)}>
+        {item && <Text>{item.text}</Text>}
+      </div>
+      </TooltipHost>
+    );
+  };
 
   React.useEffect(() => {
     if (props.clientStorage) {
@@ -293,45 +368,53 @@ export function AiImport(props: {
       });
   }
 
-  async function onSubmit(e: React.FormEvent | React.KeyboardEvent) {
+  async function onSubmit(e: React.BaseSyntheticEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading("Generating...");
 
-    const useLocalHtmltoFigma = false;
+    if (prompt) {
+      setError(null);
+      setLoading("Generating...");
 
-    // search figma for matching components
-    // The response is much quicker so keepin it first
-    const matchingDesigns = await getMatchingFigma(prompt);
-    setMatchingFigmaDesigns(matchingDesigns);
-    console.log('Matching figma id', matchingDesigns);
-    window!.open(`https://www.figma.com/file/${matchingDesigns[0]}`, '_blank');
-    // search end for matching components
+      const useLocalHtmltoFigma = false;
 
-    const gptResponse = await CallOpenAI(prompt, lastResponse)
-    const responseText = await gptResponse.text();
-    setlastResponse(responseText)
-    if (useLocalHtmltoFigma) {
-      const match = responseText.match(/<body.*>([^`]+)<\/body>/);
-      if (match) {
-        console.log(match[1]);
-        const htmlContent = match[1];
-        importHtmlToFigma(htmlContent);
+      // search figma for matching components
+      // The response is much quicker so keepin it first
+      const matchingDesigns = await getMatchingFigma(prompt);
+      setMatchingFigmaDesigns(matchingDesigns);
+      console.log('Matching figma id', matchingDesigns);
+      window!.open(`https://www.figma.com/file/${matchingDesigns[0]}`, '_blank');
+      // search end for matching components
+
+      const gptResponse = await CallOpenAI(prompt, prompts[prompts.length-1]);
+      prompts.push(prompt);
+
+      const responseText = await gptResponse.text();
+      if (useLocalHtmltoFigma) {
+        const match = responseText.match(/<body.*>([^`]+)<\/body>/);
+        if (match) {
+          console.log(match[1]);
+          const htmlContent = match[1];
+          importHtmlToFigma(htmlContent);
+        }
+      } else {
+        console.log(responseText)
+          const match = responseText.match(/```([^`]+)```/);
+          if (responseText.startsWith("<")) {
+            importHtmlviabuilderApi(responseText);
+          } else if (match) {
+            console.log(match[1]);
+            let htmlContent = match[1];
+            if (htmlContent.slice(0, 4) === "html") {
+              htmlContent = htmlContent.slice(4);
+            }
+            importHtmlviabuilderApi(htmlContent);
+          }
       }
     } else {
-      console.log(responseText)
-        const match = responseText.match(/```([^`]+)```/);
-        if (responseText.startsWith("<")) {
-          importHtmlviabuilderApi(responseText);
-        } else if (match) {
-          console.log(match[1]);
-          let htmlContent = match[1];
-          if (htmlContent.slice(0, 4) === "html") {
-            htmlContent = htmlContent.slice(4);
-          }
-          importHtmlviabuilderApi(htmlContent);
-        }
+      setError("Enter a valid prompt");
     }
+
+    listRef.current?.scrollToIndex(prompts.length);
 
   /*   if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -410,129 +493,74 @@ export function AiImport(props: {
   }
 
   return (
-    <div style={{ display: "flex" }}>
-      <div
-        style={{
-          width: settings.ui.baseWidth,
-          flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
-          boxSizing: "border-box",
-          padding: "7 20",
-        }}
-      >
-        <form onSubmit={onSubmit}>
-          <h4>
-            Prompt{" "}
-            <HelpTooltip>
-              <>Be as detailed and specific as possible.</>
-            </HelpTooltip>
-          </h4>
-          <Textarea
-            onKeyPress={(e) => {
-              if (
-                e.key === "Enter" &&
-                !(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey)
-              ) {
-                onSubmit(e);
-              }
-            }}
-            placeholder="What do you want to create?"
-            value={prompt}
-            onChange={(e) => setPrompt(e.currentTarget.value)}
-            name="prompt"
-          />
-          {/*           <h4>
-            Style
-            <HelpTooltip>
-              <>
-                Enter a well know site like 'jcrew.com'. This will guide the
-                look and feel and be used as a basis for any images
-              </>
-            </HelpTooltip>
-          </h4>
-          <Input
-            placeholder="Use a well recognized site, like 'jcrew.com'"
-            value={style}
-            onChange={(e) => setStyle(e.currentTarget.value)}
-            name="style"
-          /> */}
-          {/* <h4>
-            OpenAI Key
-            <HelpTooltip interactive>
-              <>
-                Please{" "}
-                <TooltipTextLink href="https://platform.openai.com/signup">
-                  create an account
-                </TooltipTextLink>{" "}
-                with{" "}
-                <TooltipTextLink href="https://platform.openai.com/overview">
-                  OpenAI
-                </TooltipTextLink>{" "}
-                and provide then grab your{" "}
-                <TooltipTextLink href="https://platform.openai.com/account/api-keys">
-                  API key
-                </TooltipTextLink>{" "}
-                and put it here. Be sure that you have{" "}
-                <TooltipTextLink href="https://platform.openai.com/account/billing/overview">
-                  billing
-                </TooltipTextLink>{" "}
-                <TooltipTextLink href="https://help.openai.com/en/articles/6891831-error-code-429-you-exceeded-your-current-quota-please-check-your-plan-and-billing-details">
-                  turned on
-                </TooltipTextLink>
-                .
-              </>
-            </HelpTooltip>
-          </h4>
-          <Input
-            value={openAiKey}
-            onChange={(e) => setOpenAiKey(e.currentTarget.value)}
-            type="password"
-            placeholder="sk-********************"
-            name="key"
-          /> */}
-
-          <Button
-            disabled={!(prompt && style)}
-            style={{ marginTop: 15 }}
-            variant="contained"
-            type="submit"
-            fullWidth
-            color="primary"
-          >
-            Generate
-          </Button>
-          <style>{`h4 { margin: 11px 0 7px }`}</style>
-        </form>
-        {error && (
-          <div
-            style={{
-              color: "rgba(255, 40, 40, 1)",
-              marginBottom: 10,
-              backgroundColor: "rgba(255, 0, 0, 0.1)",
+    <Stack>
+      <Stack horizontal>
+        <div className={classNames.header}>
+        <div className={classNames.commandBar}>
+          <FontIcon iconName="Color" className={classNames.icon}/>
+          <Text variant={'xLarge'}>  Design</Text>
+        </div>
+        <TooltipHost content="Coming soon">
+          <div>
+            <FontIcon iconName="CodeEdit" className={classNames.icon}/>
+            <Text variant={'xLarge'}>  Develop</Text>
+          </div>
+        </TooltipHost>
+        </div>
+      </Stack>
+      <Separator />
+      <div className={classNames.container} data-is-scrollable>
+      <List items={(prompts.map((p)=>({text:p}))) as IPrompt[]} onRenderCell={onRenderPrompt} componentRef={listRef}/>
+      </div>
+      <Separator />
+      <TextField
+          value={prompt}
+          onChange={onChangePrompt}
+          onKeyPress={(e: React.KeyboardEvent) => {
+            if (
+              e.key === "Enter" &&
+              !(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey)
+            ) {
+              onSubmit(e);
+            }
+          }}
+          styles={{
+            fieldGroup: [{
               padding: 10,
-              borderRadius: 5,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {error}
-          </div>
-        )}
-        {loading && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              flexDirection: "column",
-            }}
-          >
-            <CircularProgress style={{ margin: "10 auto" }} disableShrink />
-            {typeof loading === "string" && (
-              <div style={{ margin: "10 auto" }}>{loading}</div>
-            )}
-          </div>
-        )}
-        {!loading && matchingFigmaDesigns.length > 0 && (
+              boxSizing: 'border-box',
+              border: `1px solid lightblue`,
+              margin: 10,
+              display: 'flex',
+              borderRadius: 10,
+            }]}}
+            placeholder={"Make a design request"} multiline rows={6} resizable={false} />
+      {!loading && (<PrimaryButton styles={{root:[{margin:10, borderRadius: 8}]}} text="Generate" onClick={onSubmit}/>)}
+        {error && (
+            <div
+              style={{
+                color: "rgba(255, 40, 40, 1)",
+                marginBottom: 10,
+                backgroundColor: "rgba(255, 0, 0, 0.1)",
+                padding: 10,
+                borderRadius: 5,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {error}
+            </div>
+          )}
+          {loading && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                flexDirection: "column",
+              }}
+            >
+              <CircularProgress style={{ margin: "10 auto" }} disableShrink />
+            </div>
+          )}
+          {!loading && matchingFigmaDesigns.length > 0 && (
           <div
             style={{
               display: "flex",
@@ -555,149 +583,275 @@ export function AiImport(props: {
             </ul>
           </div>
         )}
-        {/* <TextLink
-          target="_blank"
-          href="https://www.builder.io/blog/ai-figma"
-          style={{
-            color: theme.colors.primary,
-            border: `1px solid ${theme.colors.primaryWithOpacity(0.2)}`,
-            fontWeight: "bold",
-            padding: 10,
-            borderRadius: 5,
-            backgroundColor: theme.colors.primaryWithOpacity(0.1),
-            display: "flex",
-            alignItems: "center",
-            cursor: "pointer",
-            textDecoration: "none",
-          }}
-        >
-          <HelpOutline style={{ marginRight: 10 }} />
-          Learn how to use this feature
-        </TextLink> */}
-      </div>
-      {hasPreviews() && (
-        <div
-          style={{
-            backgroundColor: "#f9f9f9",
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: 10,
-            padding: 20,
-            height: 670,
-            marginLeft: -1,
-            borderLeft: "1px solid #ccc",
-            position: "fixed",
-            right: 0,
-            zIndex: 5,
-            top: 0,
-            width: `calc(100% - ${settings.ui.baseWidth - 1}px)`,
-            overflow: "auto",
-          }}
-        >
-          {previews.map((preview, index) => (
-            <div
-              role="button"
-              key={index}
-              style={{
-                width: "300px",
-                height: "300px",
-                background: "white",
-                position: "relative",
-                borderRadius: "4px",
-                overflow: "hidden",
-                cursor: "pointer",
-                border: "1px solid #ccc",
-              }}
-              onClick={async () => {
-                setLoading("Importing...");
-                setPreviews(defaultPreviews());
-                abortControllerRef.current?.abort();
-                abortControllerRef.current = new AbortController();
-
-                fetch(`${apiHost}/api/v1/url-to-figma?width=1200`, {
-                  method: "POST",
-                  signal: abortControllerRef.current.signal,
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    html: `<div style="font-family:Arial,Helvetica,sans-serif;">${preview}</div>`,
-                  }),
-                })
-                  .then((res) => {
-                    if (!res.ok) {
-                      console.error("Url-to-figma failed", res);
-                      amplitude.track("import for ai error");
-                      throw new Error("Url-to-figma failed");
-                    }
-                    amplitude.incrementUserProps("import_count");
-                    amplitude.track("import to figma for ai", {
-                      type: "url",
-                    });
-                    return res.json();
-                  })
-                  .then((data) => {
-                    const layers = data.layers;
-                    return Promise.all(
-                      [data].concat(
-                        layers.map(async (rootLayer: Node) => {
-                          await traverseLayers(
-                            rootLayer as any,
-                            (layer: any) => {
-                              if (getImageFills(layer)) {
-                                return processImages(layer).catch((err) => {
-                                  console.warn("Could not process image", err);
-                                });
-                              }
-                            }
-                          );
-                        })
-                      )
-                    );
-                  })
-                  .then((data) => {
-                    parent.postMessage(
-                      {
-                        pluginMessage: {
-                          type: "import",
-                          data: data[0],
-                          blurImages: true,
-                        },
-                      },
-                      "*"
-                    );
-                  })
-                  .catch((err) => {
-                    console.error(err);
-                    setLoading(false);
-                    alert(err);
-                  });
-              }}
-            >
-              <div
-                style={{
-                  width: "300%",
-                  height: "300%",
-                  transform: "scale(0.3333)",
-                  position: "absolute",
-                  top: "0",
-                  left: "0",
-                  transformOrigin: "top left",
-                  overflow: "auto",
-                }}
-              >
-                <div
-                  style={{
-                    pointerEvents: "none",
-                  }}
-                  dangerouslySetInnerHTML={{ __html: preview }}
-                ></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    </Stack>
   );
+
+//   return (
+//     <div style={{ display: "flex" }}>
+//       <div
+//         style={{
+//           width: settings.ui.baseWidth,
+//           flexShrink: 0,
+//           display: "flex",
+//           flexDirection: "column",
+//           boxSizing: "border-box",
+//           padding: "7 20",
+//         }}
+//       >
+//         <form onSubmit={onSubmit}>
+//           <h4>
+//             Prompt{" "}
+//             <HelpTooltip>
+//               <>Be as detailed and specific as possible.</>
+//             </HelpTooltip>
+//           </h4>
+//           <Textarea
+//             onKeyPress={(e) => {
+//               if (
+//                 e.key === "Enter" &&
+//                 !(e.shiftKey || e.ctrlKey || e.altKey || e.metaKey)
+//               ) {
+//                 onSubmit(e);
+//               }
+//             }}
+//             placeholder="What do you want to create?"
+//             value={prompt}
+//             onChange={(e) => setPrompt(e.currentTarget.value)}
+//             name="prompt"
+//           />
+// {/*           <h4>
+//             Style
+//             <HelpTooltip>
+//               <>
+//                 Enter a well know site like 'jcrew.com'. This will guide the
+//                 look and feel and be used as a basis for any images
+//               </>
+//             </HelpTooltip>
+//           </h4>
+//           <Input
+//             placeholder="Use a well recognized site, like 'jcrew.com'"
+//             value={style}
+//             onChange={(e) => setStyle(e.currentTarget.value)}
+//             name="style"
+//           /> */}
+//           {/* <h4>
+//             OpenAI Key
+//             <HelpTooltip interactive>
+//               <>
+//                 Please{" "}
+//                 <TooltipTextLink href="https://platform.openai.com/signup">
+//                   create an account
+//                 </TooltipTextLink>{" "}
+//                 with{" "}
+//                 <TooltipTextLink href="https://platform.openai.com/overview">
+//                   OpenAI
+//                 </TooltipTextLink>{" "}
+//                 and provide then grab your{" "}
+//                 <TooltipTextLink href="https://platform.openai.com/account/api-keys">
+//                   API key
+//                 </TooltipTextLink>{" "}
+//                 and put it here. Be sure that you have{" "}
+//                 <TooltipTextLink href="https://platform.openai.com/account/billing/overview">
+//                   billing
+//                 </TooltipTextLink>{" "}
+//                 <TooltipTextLink href="https://help.openai.com/en/articles/6891831-error-code-429-you-exceeded-your-current-quota-please-check-your-plan-and-billing-details">
+//                   turned on
+//                 </TooltipTextLink>
+//                 .
+//               </>
+//             </HelpTooltip>
+//           </h4>
+//           <Input
+//             value={openAiKey}
+//             onChange={(e) => setOpenAiKey(e.currentTarget.value)}
+//             type="password"
+//             placeholder="sk-********************"
+//             name="key"
+//           /> */}
+
+//           <Button
+//             disabled={!(prompt && style)}
+//             style={{ marginTop: 15 }}
+//             variant="contained"
+//             type="submit"
+//             fullWidth
+//             color="primary"
+//           >
+//             Generate
+//           </Button>
+//           <style>{`h4 { margin: 11px 0 7px }`}</style>
+//         </form>
+//         {error && (
+//           <div
+//             style={{
+//               color: "rgba(255, 40, 40, 1)",
+//               marginBottom: 10,
+//               backgroundColor: "rgba(255, 0, 0, 0.1)",
+//               padding: 10,
+//               borderRadius: 5,
+//               whiteSpace: "pre-wrap",
+//             }}
+//           >
+//             {error}
+//           </div>
+//         )}
+//         {loading && (
+//           <div
+//             style={{
+//               display: "flex",
+//               justifyContent: "center",
+//               flexDirection: "column",
+//             }}
+//           >
+//             <CircularProgress style={{ margin: "10 auto" }} disableShrink />
+//             {typeof loading === "string" && (
+//               <div style={{ margin: "10 auto" }}>{loading}</div>
+//             )}
+//           </div>
+//         )}
+//         {/* <TextLink
+//           target="_blank"
+//           href="https://www.builder.io/blog/ai-figma"
+//           style={{
+//             color: theme.colors.primary,
+//             border: `1px solid ${theme.colors.primaryWithOpacity(0.2)}`,
+//             fontWeight: "bold",
+//             padding: 10,
+//             borderRadius: 5,
+//             backgroundColor: theme.colors.primaryWithOpacity(0.1),
+//             display: "flex",
+//             alignItems: "center",
+//             cursor: "pointer",
+//             textDecoration: "none",
+//           }}
+//         >
+//           <HelpOutline style={{ marginRight: 10 }} />
+//           Learn how to use this feature
+//         </TextLink> */}
+//       </div>
+//       {hasPreviews() && (
+//         <div
+//           style={{
+//             backgroundColor: "#f9f9f9",
+//             display: "flex",
+//             flexWrap: "wrap",
+//             justifyContent: "center",
+//             gap: 10,
+//             padding: 20,
+//             height: 670,
+//             marginLeft: -1,
+//             borderLeft: "1px solid #ccc",
+//             position: "fixed",
+//             right: 0,
+//             zIndex: 5,
+//             top: 0,
+//             width: `calc(100% - ${settings.ui.baseWidth - 1}px)`,
+//             overflow: "auto",
+//           }}
+//         >
+//           {previews.map((preview, index) => (
+//             <div
+//               role="button"
+//               key={index}
+//               style={{
+//                 width: "300px",
+//                 height: "300px",
+//                 background: "white",
+//                 position: "relative",
+//                 borderRadius: "4px",
+//                 overflow: "hidden",
+//                 cursor: "pointer",
+//                 border: "1px solid #ccc",
+//               }}
+//               onClick={async () => {
+//                 setLoading("Importing...");
+//                 setPreviews(defaultPreviews());
+//                 abortControllerRef.current?.abort();
+//                 abortControllerRef.current = new AbortController();
+
+//                 fetch(`${apiHost}/api/v1/url-to-figma?width=1200`, {
+//                   method: "POST",
+//                   signal: abortControllerRef.current.signal,
+//                   headers: {
+//                     "Content-Type": "application/json",
+//                   },
+//                   body: JSON.stringify({
+//                     html: `<div style="font-family:Arial,Helvetica,sans-serif;">${preview}</div>`,
+//                   }),
+//                 })
+//                   .then((res) => {
+//                     if (!res.ok) {
+//                       console.error("Url-to-figma failed", res);
+//                       amplitude.track("import for ai error");
+//                       throw new Error("Url-to-figma failed");
+//                     }
+//                     amplitude.incrementUserProps("import_count");
+//                     amplitude.track("import to figma for ai", {
+//                       type: "url",
+//                     });
+//                     return res.json();
+//                   })
+//                   .then((data) => {
+//                     const layers = data.layers;
+//                     return Promise.all(
+//                       [data].concat(
+//                         layers.map(async (rootLayer: Node) => {
+//                           await traverseLayers(
+//                             rootLayer as any,
+//                             (layer: any) => {
+//                               if (getImageFills(layer)) {
+//                                 return processImages(layer).catch((err) => {
+//                                   console.warn("Could not process image", err);
+//                                 });
+//                               }
+//                             }
+//                           );
+//                         })
+//                       )
+//                     );
+//                   })
+//                   .then((data) => {
+//                     parent.postMessage(
+//                       {
+//                         pluginMessage: {
+//                           type: "import",
+//                           data: data[0],
+//                           blurImages: true,
+//                         },
+//                       },
+//                       "*"
+//                     );
+//                   })
+//                   .catch((err) => {
+//                     console.error(err);
+//                     setLoading(false);
+//                     alert(err);
+//                   });
+//               }}
+//             >
+//               <div
+//                 style={{
+//                   width: "300%",
+//                   height: "300%",
+//                   transform: "scale(0.3333)",
+//                   position: "absolute",
+//                   top: "0",
+//                   left: "0",
+//                   transformOrigin: "top left",
+//                   overflow: "auto",
+//                 }}
+//               >
+//                 <div
+//                   style={{
+//                     pointerEvents: "none",
+//                   }}
+//                   dangerouslySetInnerHTML={{ __html: preview }}
+//                 ></div>
+//               </div>
+//             </div>
+//           ))}
+//         </div>
+//       )}
+//     </div>
+//   );
 }

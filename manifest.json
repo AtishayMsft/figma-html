@@ -1,7 +1,7 @@
 {
-  "name": "Figma AI Copilot",
+  "name": "Copilot for UI",
   "id": "747985167520967365",
-  "api": "2.0.0",
+  "api": "1.0.0",
   "main": "dist/code.js",
   "editorType": ["figma"],
   "ui": "dist/ui.html"
