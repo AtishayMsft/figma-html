@@ -864,7 +864,7 @@ class App extends SafeComponent {
         locale={this.currentLanguage}
         defaultLocale="en"
       >
-        <div
+        {/* <div
           style={{
             display: "flex",
             flexDirection: "column",
@@ -889,7 +889,7 @@ class App extends SafeComponent {
             onChange={this.switchTab}
             indicatorColor="primary"
             textColor="primary"
-          >
+          > */}
             {/* <Tab
               style={{
                 minHeight: 40,
@@ -907,7 +907,7 @@ class App extends SafeComponent {
                 </span>
               }
             /> */}
-            <Tab
+            {/* <Tab
               style={{
                 minHeight: 40,
                 minWidth: 0,
@@ -923,7 +923,7 @@ class App extends SafeComponent {
                   Generate with AI
                 </span>
               }
-            />
+            /> */}
             {/* <Tab
               style={{
                 minHeight: 40,
@@ -941,8 +941,8 @@ class App extends SafeComponent {
                 </span>
               }
             /> */}
-          </Tabs>
-          <Divider style={{ width: settings.ui.baseWidth }} />
+          {/* </Tabs>
+          <Divider style={{ width: settings.ui.baseWidth }} /> */}
 {/*           <TabPanel
             style={{
               display: "flex",
@@ -1382,7 +1382,7 @@ class App extends SafeComponent {
             </>
           </TabPanel> */}
 
-          <TabPanel value={this.tabIndex} index={0}>
+          {/* <TabPanel value={this.tabIndex} index={0}> */}
             <AiImport
               clientStorage={this.clientStorage}
               updateClientStorage={(clientStorage) => {
@@ -1390,7 +1390,7 @@ class App extends SafeComponent {
                 this.updateStorage();
               }}
             />
-          </TabPanel>
+          {/* </TabPanel> */}
 
           {/* Import to Figma */}
 {/*           <TabPanel value={this.tabIndex} index={2}>
@@ -1910,7 +1910,7 @@ class App extends SafeComponent {
             </div>
           </TabPanel> */}
 
-          <div
+          {/* <div
             style={{
               display: "flex",
               flexDirection: "column",
@@ -1944,7 +1944,7 @@ class App extends SafeComponent {
                   report it
                 </a>
               </div>
-            )}
+            )} */}
             {/* <a
               style={{ display: "flex" }}
               href="https://www.builder.io?utm_source=figma"
@@ -2035,8 +2035,8 @@ class App extends SafeComponent {
                 <FormattedMessage id="help" defaultMessage="Help" />
               </a>
             </div> */}
-          </div>
-        </div>
+          {/* </div>
+        </div> */}
       </IntlProvider>
     );
   }
