@@ -1,4 +1,6 @@
 plugin/**/*.js
+key.ts
+PromptMap.json
 node_modules
 dist
 

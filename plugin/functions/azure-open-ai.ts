@@ -1,5 +1,5 @@
 import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from "openai";
-
+import { apiKey } from "./figma-ai-search/key" //key.ts is not included in this repo
 
 const simpleOpenAIRequest = async (prompt: string, lastResponse: string) => {
   // create a new configuration object with the base path set to the Azure OpenAI endpoint
@@ -31,7 +31,7 @@ const simpleOpenAIRequest = async (prompt: string, lastResponse: string) => {
     },
     {
       headers: {
-        "api-key": "", // set the api-key header to the Azure Open AI key
+        "api-key": apiKey, // set the api-key header to the Azure Open AI key
       },
       params: {
         "api-version": "2023-03-15-preview", // set the api-version to the latest version

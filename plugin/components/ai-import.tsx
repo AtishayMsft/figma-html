@@ -13,6 +13,8 @@ import { useDev } from "../constants/use-dev";
 import { HelpOutline } from "@material-ui/icons";
 import { htmlToFigma } from "../../lib/html-to-figma";
 import { CallOpenAI } from "../functions/azure-open-ai";
+import { getMatchingFigma } from "../functions/figma-ai-search";
+import { last } from "lodash";
 
 export const aiApiHost = useDev
   ? "http://localhost:4000"
@@ -296,6 +298,13 @@ export function AiImport(props: {
     setLoading("Generating...");
 
     const useLocalHtmltoFigma = false;
+
+    // search figma for matching components
+    // The response is much quicker so keepin it first
+    const figmaResponse = await getMatchingFigma(prompt);
+    console.log('Matching figma id', figmaResponse);
+    // search end for matching components
+
     const gptResponse = await CallOpenAI(prompt, lastResponse)
     const responseText = await gptResponse.text();
     setlastResponse(responseText)
