@@ -58,6 +58,7 @@
   "dependencies": {
     "@amplitude/analytics-browser": "^1.2.0",
     "@emotion/core": "^10.0.28",
+    "@fluentui/react": "^8.109.3",
     "@types/lodash": "^4.14.168",
     "@types/pako": "^1.0.1",
     "azure-openai": "^0.9.4",
