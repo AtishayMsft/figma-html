@@ -11,7 +11,7 @@ const simpleOpenAIRequest = async (prompt: string, lastResponse: string) => {
 
   let conversation: Array<ChatCompletionRequestMessage> = [{
     role: "system",
-    content: "Follow these instructions while computing and returning the results. Generate a html output for the asked query. Keep the html and css in the same code block. Return only the html code block as output. Do not return any comments or explanation outside the code block. Use native html5 controls and the latest microsoft fluent ui react styles in the results.",
+    content: "Follow these instructions while computing and returning the results. Generate a html output for the asked query. Keep the html and css in the same code block. Return only the html code block as output. Do not return any comments or explanation outside the code block. Use native html5 controls. Make sure to take the styles from office-ui-fabric-core/11.0.0/css/fabric.min.css stylesheet and apply it to the results",
   }]
 
   if (lastResponse !== "") {

@@ -2,6 +2,7 @@ import { traverseLayers } from "./functions/traverse-layers";
 import { settings } from "./constants/settings";
 import { fastClone } from "./functions/fast-clone";
 import { getLayout, hasChildren, isGroupNode } from "../lib/helpers";
+import { mergeFluentStyles } from "./constants/use-dev";
 
 const allPropertyNames = [
   "id",
@@ -524,7 +525,22 @@ figma.ui.onmessage = async (msg) => {
     );
     await figma.loadFontAsync(defaultFont);
     const { data } = msg;
-    const { layers } = data;
+    let { layers } = data;
+    // Insert high fidelity object into layers.
+    if (false) {
+      let layersModified = []
+      for (const layer of layers) {
+        if (layer.type === "RECTANGLE" && layer.name === "IMAGE") {
+          let replacedLayer = {"name":"Persona-container","type":"FRAME","width":40,"height":40,"x":0,"y":0,"fills":[{"type":"SOLID","visible":false,"opacity":1,"blendMode":"NORMAL","color":{"r":1,"g":1,"b":1}}],"children":[{"name":"Online / Online | 40-48","type":"INSTANCE","width":12,"height":12,"fills":[{"type":"SOLID","visible":false,"opacity":1,"blendMode":"NORMAL","color":{"r":1,"g":1,"b":1}}],"characters":"LB","children":[{"name":"String-icon-SkypeCheck","type":"TEXT","width":12,"height":12,"fills":[{"type":"SOLID","visible":true,"opacity":1,"blendMode":"NORMAL","color":{"r":1,"g":1,"b":1}}],"characters":""}]}]}
+          replacedLayer.x = layer.x
+          replacedLayer.y = layer.y
+          layersModified.push(replacedLayer)
+        } else {
+          layersModified.push(layer)
+        }
+      }
+      layers = layersModified
+    }
     const rects: SceneNode[] = [];
     let baseFrame: PageNode | FrameNode = figma.currentPage;
     // TS bug? TS is implying that frameRoot is PageNode and ignoring the type declaration
@@ -654,11 +670,14 @@ figma.ui.onmessage = async (msg) => {
       jsonObj.width = sel.height
       jsonObj.height = sel.height
       jsonObj.fills = sel.fills
+      if (sel.type === " TEXT") {
+          jsonObj.characters = sel.characters
+      }
       if (sel.children) {
           jsonObj.children = figmaObjectToJson(sel.children)
       }
   }
   return jsonObj
-} */
+}  */
 
 /* console.log(JSON.stringify(figmaObjectToJson(figma.currentPage.selection))) */
