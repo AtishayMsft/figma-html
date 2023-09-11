@@ -1,0 +1,476 @@
+{
+  "document": {
+    "type": "CANVAS",
+    "children": [
+      {
+        "type": "FRAME",
+        "name": "Login page",
+        "backgroundColor": {
+          "r": 0.9490196078431372,
+          "g": 0.9490196078431372,
+          "b": 0.9490196078431372,
+          "a": 1
+        },
+        "layoutMode": "NONE",
+        "constraints": {
+          "horizontal": "CENTER",
+          "vertical": "TOP"
+        },
+        "size": {
+          "x": 0,
+          "y": 0,
+          "width": 375,
+          "height": 812
+        },
+        "children": [
+          {
+            "type": "TEXT",
+            "name": "Welcome back!",
+            "visible": true,
+            "style": {
+              "fontFamily": "Roboto",
+              "fontWeight": 700,
+              "fontSize": 32,
+              "textAlignHorizontal": "CENTER",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0,
+              "lineHeightPercent": 100,
+              "lineHeightUnit": "PIXELS",
+              "lineHeightPx": 37.5,
+              "fill": {
+                "r": 0.11764705882352941,
+                "g": 0.11764705882352941,
+                "b": 0.11764705882352941,
+                "a": 1
+              }
+            },
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "CENTER",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 79,
+              "y": 164,
+              "width": 217,
+              "height": 75
+            },
+            "characters": "Welcome back!"
+          },
+          {
+            "type": "TEXT",
+            "name": "Email",
+            "visible": true,
+            "style": {
+              "fontFamily": "Roboto",
+              "fontWeight": 400,
+              "fontSize": 16,
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0,
+              "lineHeightPercent": 100,
+              "lineHeightUnit": "PIXELS",
+              "lineHeightPx": 18.75,
+              "fill": {
+                "r": 0.11764705882352941,
+                "g": 0.11764705882352941,
+                "b": 0.11764705882352941,
+                "a": 1
+              }
+            },
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "LEFT",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 40,
+              "y": 300,
+              "width": 39,
+              "height": 19
+            },
+            "characters": "Email"
+          },
+          {
+            "type": "RECTANGLE",
+            "name": "Email input",
+            "visible": true,
+            "fills": [
+              {
+                "type": "SOLID",
+                "color": {
+                  "r": 1,
+                  "g": 1,
+                  "b": 1,
+                  "a": 1
+                }
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "color": {
+                  "r": 0.7686274509803922,
+                  "g": 0.7686274509803922,
+                  "b": 0.7686274509803922,
+                  "a": 1
+                }
+              }
+            ],
+            "strokeWeight": 1,
+            "strokeAlign": "INSIDE",
+            "effects": [
+              {
+                "type": "DROP_SHADOW",
+                "visible": true,
+                "color": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 0.1
+                },
+                "offset": {
+                  "x": 0,
+                  "y": 2
+                },
+                "radius": 4,
+                "spread": 0
+              }
+            ],
+            "cornerRadius": 8,
+            "rectangleCornerRadii": [
+              8,
+              8,
+              8,
+              8
+            ],
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "LEFT_RIGHT",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 40,
+              "y": 329,
+              "width": 295,
+              "height": 48
+            },
+            "children": [
+              {
+                "type": "TEXT",
+                "name": "Email input text",
+                "visible": true,
+                "style": {
+                  "fontFamily": "Roboto",
+                  "fontWeight": 400,
+                  "fontSize": 16,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "CENTER",
+                  "letterSpacing": 0,
+                  "lineHeightPercent": 100,
+                  "lineHeightUnit": "PIXELS",
+                  "lineHeightPx": 18.75,
+                  "fill": {
+                    "r": 0.11764705882352941,
+                    "g": 0.11764705882352941,
+                    "b": 0.11764705882352941,
+                    "a": 1
+                  }
+                },
+                "layoutAlign": "INHERIT",
+                "constraints": {
+                  "horizontal": "LEFT",
+                  "vertical": "CENTER"
+                },
+                "size": {
+                  "x": 16,
+                  "y": 14,
+                  "width": 0,
+                  "height": 19
+                },
+                "characters": ""
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "Password",
+            "visible": true,
+            "style": {
+              "fontFamily": "Roboto",
+              "fontWeight": 400,
+              "fontSize": 16,
+              "textAlignHorizontal": "LEFT",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0,
+              "lineHeightPercent": 100,
+              "lineHeightUnit": "PIXELS",
+              "lineHeightPx": 18.75,
+              "fill": {
+                "r": 0.11764705882352941,
+                "g": 0.11764705882352941,
+                "b": 0.11764705882352941,
+                "a": 1
+              }
+            },
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "LEFT",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 40,
+              "y": 397,
+              "width": 74,
+              "height": 19
+            },
+            "characters": "Password"
+          },
+          {
+            "type": "RECTANGLE",
+            "name": "Password input",
+            "visible": true,
+            "fills": [
+              {
+                "type": "SOLID",
+                "color": {
+                  "r": 1,
+                  "g": 1,
+                  "b": 1,
+                  "a": 1
+                }
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "color": {
+                  "r": 0.7686274509803922,
+                  "g": 0.7686274509803922,
+                  "b": 0.7686274509803922,
+                  "a": 1
+                }
+              }
+            ],
+            "strokeWeight": 1,
+            "strokeAlign": "INSIDE",
+            "effects": [
+              {
+                "type": "DROP_SHADOW",
+                "visible": true,
+                "color": {
+                  "r": 0,
+                  "g": 0,
+                  "b": 0,
+                  "a": 0.1
+                },
+                "offset": {
+                  "x": 0,
+                  "y": 2
+                },
+                "radius": 4,
+                "spread": 0
+              }
+            ],
+            "cornerRadius": 8,
+            "rectangleCornerRadii": [
+              8,
+              8,
+              8,
+              8
+            ],
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "LEFT_RIGHT",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 40,
+              "y": 426,
+              "width": 295,
+              "height": 48
+            },
+            "children": [
+              {
+                "type": "TEXT",
+                "name": "Password input text",
+                "visible": true,
+                "style": {
+                  "fontFamily": "Roboto",
+                  "fontWeight": 400,
+                  "fontSize": 16,
+                  "textAlignHorizontal": "LEFT",
+                  "textAlignVertical": "CENTER",
+                  "letterSpacing": 0,
+                  "lineHeightPercent": 100,
+                  "lineHeightUnit": "PIXELS",
+                  "lineHeightPx": 18.75,
+                  "fill": {
+                    "r": 0.11764705882352941,
+                    "g": 0.11764705882352941,
+                    "b": 0.11764705882352941,
+                    "a": 1
+                  }
+                },
+                "layoutAlign": "INHERIT",
+                "constraints": {
+                  "horizontal": "LEFT",
+                  "vertical": "CENTER"
+                },
+                "size": {
+                  "x": 16,
+                  "y": 14,
+                  "width": 0,
+                  "height": 19
+                },
+                "characters": ""
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "Forgot password?",
+            "visible": true,
+            "style": {
+              "fontFamily": "Roboto",
+              "fontWeight": 400,
+              "fontSize": 14,
+              "textAlignHorizontal": "RIGHT",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0,
+              "lineHeightPercent": 100,
+              "lineHeightUnit": "PIXELS",
+              "lineHeightPx": 16.40625,
+              "fill": {
+                "r": 0.11764705882352941,
+                "g": 0.11764705882352941,
+                "b": 0.11764705882352941,
+                "a": 1
+              }
+            },
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "RIGHT",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 208,
+              "y": 484,
+              "width": 127,
+              "height": 17
+            },
+            "characters": "Forgot password?"
+          },
+          {
+            "type": "RECTANGLE",
+            "name": "Login button",
+            "visible": true,
+            "fills": [
+              {
+                "type": "SOLID",
+                "color": {
+                  "r": 0.11764705882352941,
+                  "g": 0.11764705882352941,
+                  "b": 0.11764705882352941,
+                  "a": 1
+                }
+              }
+            ],
+            "strokes": [],
+            "strokeWeight": 1,
+            "strokeAlign": "INSIDE",
+            "effects": [],
+            "cornerRadius": 8,
+            "rectangleCornerRadii": [
+              8,
+              8,
+              8,
+              8
+            ],
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "LEFT_RIGHT",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 40,
+              "y": 541,
+              "width": 295,
+              "height": 48
+            },
+            "children": [
+              {
+                "type": "TEXT",
+                "name": "Login button text",
+                "visible": true,
+                "style": {
+                  "fontFamily": "Roboto",
+                  "fontWeight": 700,
+                  "fontSize": 16,
+                  "textAlignHorizontal": "CENTER",
+                  "textAlignVertical": "CENTER",
+                  "letterSpacing": 0,
+                  "lineHeightPercent": 100,
+                  "lineHeightUnit": "PIXELS",
+                  "lineHeightPx": 18.75,
+                  "fill": {
+                    "r": 1,
+                    "g": 1,
+                    "b": 1,
+                    "a": 1
+                  }
+                },
+                "layoutAlign": "INHERIT",
+                "constraints": {
+                  "horizontal": "CENTER",
+                  "vertical": "CENTER"
+                },
+                "size": {
+                  "x": 122.5,
+                  "y": 14,
+                  "width": 50,
+                  "height": 19
+                },
+                "characters": "Login"
+              }
+            ]
+          },
+          {
+            "type": "TEXT",
+            "name": "Don't have an account? Sign up",
+            "visible": true,
+            "style": {
+              "fontFamily": "Roboto",
+              "fontWeight": 400,
+              "fontSize": 14,
+              "textAlignHorizontal": "CENTER",
+              "textAlignVertical": "TOP",
+              "letterSpacing": 0,
+              "lineHeightPercent": 100,
+              "lineHeightUnit": "PIXELS",
+              "lineHeightPx": 16.40625,
+              "fill": {
+                "r": 0.11764705882352941,
+                "g": 0.11764705882352941,
+                "b": 0.11764705882352941,
+                "a": 1
+              }
+            },
+            "layoutAlign": "INHERIT",
+            "constraints": {
+              "horizontal": "CENTER",
+              "vertical": "TOP"
+            },
+            "size": {
+              "x": 69,
+              "y": 609,
+              "width": 237,
+              "height": 17
+            },
+            "characters": "Don't have an account? Sign up"
+          }
+        ]
+      }
+    ]
+  }
+}

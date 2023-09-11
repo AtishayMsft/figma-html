@@ -51,41 +51,6 @@ function defaultPreviews() {
   return Array.from({ length: numPreviews }, () => "");
 }
 
-const classNames = mergeStyleSets({
-  itemCell: [
-    {
-      padding: 10,
-      boxSizing: 'border-box',
-      border: `1px solid`,
-      borderColor: '#e3f2ff',
-      margin: 10,
-      display: 'flex',
-      borderRadius: 10,
-      selectors: {
-        '&:hover': { background: "#e3f2ff" },
-      },
-    },
-  ],
-  header: {
-    marginTop: 10,
-    display: "flex"
-  },
-  commandBar: {
-    marginLeft: 10,
-    marginRight: 30,
-    paddingBottom: 4,
-    borderBottom: `4px solid`
-  },
-  container: {
-    overflow: 'auto',
-    maxHeight: 200,
-    height: 200
-  },
-  icon: {
-    fontSize: 20
-  }
-});
-
 interface IPrompt {
   text: String;
 }
@@ -126,6 +91,41 @@ export function AiImport(props: {
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState<boolean | string>(false);
   const [matchingFigmaDesigns, setMatchingFigmaDesigns] = React.useState<string[]>([]);
+
+  const classNames = mergeStyleSets({
+    itemCell: [
+      {
+        padding: 10,
+        boxSizing: 'border-box',
+        border: `1px solid`,
+        borderColor: '#e3f2ff',
+        margin: 10,
+        display: 'flex',
+        borderRadius: 10,
+        selectors: {
+          '&:hover': { background: "#e3f2ff" },
+        },
+      },
+    ],
+    header: {
+      marginTop: 10,
+      display: "flex"
+    },
+    commandBar: {
+      marginLeft: 10,
+      marginRight: 30,
+      paddingBottom: 4,
+      borderBottom: `4px solid`
+    },
+    container: {
+      overflow: 'auto',
+      maxHeight: 200,
+      height: !loading && matchingFigmaDesigns.length > 0 ? 100 : 230
+    },
+    icon: {
+      fontSize: 20
+    }
+  });
 
   const onChangePrompt = React.useCallback(
     (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -402,9 +402,11 @@ export function AiImport(props: {
           importHtmlToFigma(htmlContent);
         }
       } else {
+        let validResponse = false;
         console.log(responseText)
           const match = responseText.match(/```([^`]+)```/);
           if (responseText.startsWith("<")) {
+            validResponse = true;
             importHtmlviabuilderApi(responseText);
           } else if (match) {
             console.log(match[1]);
@@ -412,7 +414,14 @@ export function AiImport(props: {
             if (htmlContent.slice(0, 4) === "html") {
               htmlContent = htmlContent.slice(4);
             }
+            validResponse = true;
             importHtmlviabuilderApi(htmlContent);
+          }
+
+          if(!validResponse) {
+            setError("Your prompt did not generate a valid design.");
+            setLoading(false);
+            setPrompts([]);
           }
       }
     } else {
@@ -518,6 +527,45 @@ export function AiImport(props: {
       <List items={(prompts.map((p)=>({text:p}))) as IPrompt[]} onRenderCell={onRenderPrompt} componentRef={listRef}/>
       </div>
       <Separator />
+      {!loading && matchingFigmaDesigns.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              flexDirection: "column",
+              marginLeft: 12
+            }}
+          >
+            <h4 style={{ marginBottom: 0 }}>Checkout similar designs from Microsoft community</h4>
+            <ul>
+              {matchingFigmaDesigns.map((figmaId) => (
+                <li>
+                  <a
+                    href={`https://www.figma.com/file/${figmaId}`}
+                    target="_blank"
+                  >
+                    {figmaId}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      <Separator />
+      {error && (
+            <div
+              style={{
+                color: "rgba(255, 40, 40, 1)",
+                marginBottom: 10,
+                backgroundColor: "rgba(255, 0, 0, 0.1)",
+                padding: 20,
+                borderRadius: 5,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {error}
+            </div>
+          )}
       <TextField
           value={prompt}
           onChange={onChangePrompt}
@@ -540,20 +588,6 @@ export function AiImport(props: {
             }]}}
             placeholder={"Make a design request"} multiline rows={6} resizable={false} />
       {!loading && (<PrimaryButton styles={{root:[{margin:10, borderRadius: 8}]}} text="Generate" onClick={onSubmit}/>)}
-        {error && (
-            <div
-              style={{
-                color: "rgba(255, 40, 40, 1)",
-                marginBottom: 10,
-                backgroundColor: "rgba(255, 0, 0, 0.1)",
-                padding: 10,
-                borderRadius: 5,
-                whiteSpace: "pre-wrap",
-              }}
-            >
-              {error}
-            </div>
-          )}
           {loading && (
             <div
               style={{
@@ -565,30 +599,6 @@ export function AiImport(props: {
               <CircularProgress style={{ margin: "10 auto" }} disableShrink />
             </div>
           )}
-          {!loading && matchingFigmaDesigns.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              flexDirection: "column",
-              marginLeft: 12
-            }}
-          >
-            <h3 style={{ marginBottom: 0 }}>Similar Designs</h3>
-            <ul>
-              {matchingFigmaDesigns.map((figmaId) => (
-                <li>
-                  <a
-                    href={`https://www.figma.com/file/${figmaId}`}
-                    target="_blank"
-                  >
-                    {figmaId}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
     </Stack>
   );
 
