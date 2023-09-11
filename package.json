@@ -27,7 +27,7 @@
   "license": "MIT",
   "devDependencies": {
     "@builder.io/sdk": "^1.0.40",
-    "@figma/plugin-typings": "^1.19.0",
+    "@figma/plugin-typings": "^1.73.0",
     "@material-ui/core": "^4.3.3",
     "@material-ui/icons": "^4.2.1",
     "@types/escape-html": "0.0.20",
@@ -49,7 +49,7 @@
     "spark-md5": "^3.0.0",
     "style-loader": "^0.23.1",
     "ts-loader": "^6.0.4",
-    "typescript": "^3.8.3",
+    "typescript": "^5.1.6",
     "typescript-declaration-webpack-plugin": "^0.1.1",
     "url-loader": "^2.1.0",
     "webpack": "^4.38.0",

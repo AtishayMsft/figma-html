@@ -35,7 +35,7 @@ import { arrayBufferToBase64 } from "../lib/functions/buffer-to-base64";
 import { SafeComponent } from "./classes/safe-component";
 import { settings } from "./constants/settings";
 import { theme as themeVars } from "./constants/theme";
-import { fastClone } from "./functions/fast-clone";
+import { deepClone, fastClone } from "./functions/fast-clone";
 import { transformWebpToPNG } from "./functions/encode-images";
 import { traverseLayers } from "./functions/traverse-layers";
 import "./ui.css";
@@ -51,6 +51,7 @@ import { v4 as uuid } from "uuid";
 import { AiImport } from "./components/ai-import";
 import { Wand } from "./icons/wand";
 import { useDev } from "./constants/use-dev";
+import { Observable } from "@builder.io/sdk/dist/src/classes/observable.class";
 
 // https://stackoverflow.com/a/46634877
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
@@ -63,7 +64,7 @@ const selectionToBuilder = async (
 ): Promise<BuilderElement[]> => {
   const useGzip = true;
 
-  selection = fastClone(selection);
+  selection = deepClone(selection);
 
   traverse(selection).forEach(function (item) {
     if (this.key === "intArr") {
@@ -308,6 +309,8 @@ class App extends SafeComponent {
   @observable width = "1200";
   @observable online = navigator.onLine;
   @observable useFrames = false;
+  @observable inDevMode: boolean = false;
+  @observable devModeClickCount: number = 0;
   @observable showMoreOptions = true;
   @observable selection: (BaseNode & { data?: { [key: string]: any } })[] = [];
   @observable.ref selectionWithImages:
@@ -327,6 +330,7 @@ class App extends SafeComponent {
   @observable displayFiddleUrl = "";
   @observable currentLanguage = "en";
   @observable tabIndex = 0;
+  @observable showDevModeOption: boolean = false;
   @observable figmaCheckList: {
     results?: CheckListContent[];
   } = {};
@@ -488,22 +492,33 @@ class App extends SafeComponent {
 
     // TODO: analyze if page is properly nested and annotated, if not
     // suggest in the UI what needs grouping
-    const selectionToBuilderPromise = selectionToBuilder(
-      this.selectionWithImages as any
-    ).catch((err) => {
-      this.loadingGenerate = false;
-      this.generatingCode = false;
-      this.showRequestFailedError = true;
-      amplitude.track("export error");
-      throw err;
-    });
+    let selectionToBuilderPromise;
+    if (!this.inDevMode) {
+      selectionToBuilderPromise = selectionToBuilder(
+        this.selectionWithImages as any
+      ).catch((err) => {
+        this.loadingGenerate = false;
+        this.generatingCode = false;
+        this.showRequestFailedError = true;
+        amplitude.track("export error");
+        throw err;
+      });
+    } else {
+      const selections = deepClone(this.selectionWithImages);
+      traverse(selections).forEach(function () {
+        if (this.key === "intArr") {
+          this.delete();
+        }
+      });
+      selectionToBuilderPromise = Promise.resolve(selections);
+    }
 
     const imagesPromises: Promise<any>[] = [];
     const imageMap: { [key: string]: string } = {};
     for (const layer of this.selectionWithImages as SceneNode[]) {
       traverseLayers(layer, (node) => {
         const imageFills = getImageFills(node as Node);
-        if (Array.isArray(imageFills) && imageFills.length) {
+        if (Array.isArray(imageFills) && imageFills.length && !this.inDevMode) {
           imageFills.forEach((image) => {
             if ((image as any)?.intArr) {
               imagesPromises.push(
@@ -563,14 +578,20 @@ class App extends SafeComponent {
     };
 
     this.isValidImport = null;
-    parent.postMessage(
-      {
-        pluginMessage: {
-          type: "checkIfCanGetCode",
+    if (this.inDevMode) {
+      // In the case of dev mode
+      // We don't care about autolayout
+      this.isValidImport = true;
+    } else {
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "checkIfCanGetCode",
+          },
         },
-      },
-      "*"
-    );
+        "*"
+      );
+    }
 
     this.generatingCode = true;
 
@@ -586,7 +607,8 @@ class App extends SafeComponent {
 
     const json = JSON.stringify(data);
 
-    if (useFiddle) {
+    // Always only download in dev mode
+    if (useFiddle && !this.inDevMode) {
       const res = await fetch(apiHost + "/api/v1/fiddle", {
         method: "POST",
         headers: {
@@ -1271,28 +1293,78 @@ class App extends SafeComponent {
                       </div>
                     )}
                     {Boolean(this.selection.length) && (
-                      <Tooltip
-                        disableHoverListener={Boolean(this.selection.length)}
-                        title={this.getLang().selectLayerPop}
-                      >
-                        <div>
-                          <Button
-                            fullWidth
-                            style={{ marginTop: 20, textTransform: "none" }}
-                            variant="contained"
-                            onClick={(e) => {
-                              this.getCode(true);
+                      <>
+                        {this.showDevModeOption && (
+                          <Tooltip
+                            PopperProps={{
+                              modifiers: { flip: { behavior: ["top"] } },
                             }}
-                            disabled={!this.selection.length}
-                            color="primary"
+                            enterDelay={300}
+                            placement="top"
+                            title={this.getLang().devMode}
                           >
-                            <FormattedMessage
-                              id="getCode"
-                              defaultMessage="Get Code"
+                            <FormControlLabel
+                              value="Use Dev Mode"
+                              disabled={!this.selection.length}
+                              style={{
+                                marginTop: 20,
+                                textTransform: "none",
+                                float: "right",
+                                marginRight: 0,
+                              }}
+                              control={
+                                <Switch
+                                  size="small"
+                                  color="primary"
+                                  checked={this.inDevMode}
+                                  onChange={(e) =>
+                                    (this.inDevMode = e.target.checked)
+                                  }
+                                />
+                              }
+                              label={
+                                <span
+                                  style={{
+                                    fontSize: 12,
+                                    position: "relative",
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  <FormattedMessage
+                                    id="devMode"
+                                    defaultMessage="Use Dev Mode"
+                                  />
+                                </span>
+                              }
+                              labelPlacement="start"
                             />
-                          </Button>
-                        </div>
-                      </Tooltip>
+                          </Tooltip>
+                        )}
+                        <Tooltip
+                          disableHoverListener={Boolean(this.selection.length)}
+                          title={this.getLang().selectLayerPop}
+                        >
+                          <div>
+                            <Button
+                              fullWidth
+                              variant="contained"
+                              style={{
+                                marginTop: 10,
+                              }}
+                              onClick={(e) => {
+                                this.getCode(true);
+                              }}
+                              disabled={!this.selection.length}
+                              color="primary"
+                            >
+                              <FormattedMessage
+                                id="getCode"
+                                defaultMessage="Get Code"
+                              />
+                            </Button>
+                          </div>
+                        </Tooltip>
+                      </>
                     )}
                     {this.displayFiddleUrl && (
                       <div
@@ -1980,7 +2052,10 @@ class App extends SafeComponent {
               </a>{" "}
               <span style={{ opacity: 0.9 }}>
                 is a headless CMS that lets you drag & drop with your
-                components.
+                <span onClick={() => this.handleDevModeClick()}>
+                  &nbsp;components
+                </span>
+                .
               </span>
             </p>
 
@@ -2039,6 +2114,12 @@ class App extends SafeComponent {
         </div> */}
       </IntlProvider>
     );
+  }
+  handleDevModeClick(): void {
+    this.devModeClickCount++;
+    if (this.devModeClickCount > 4) {
+      this.showDevModeOption = true;
+    }
   }
 }
 
