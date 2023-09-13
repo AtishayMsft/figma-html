@@ -70,6 +70,8 @@ function addImagesToHtml(html: string, index: number, images: string[]) {
 const defaultImage =
   "https://cdn.builder.io/api/v1/image/assets%2FYJIGb4i01jvw0SRdL5Bt%2F72c80f114dc149019051b6852a9e3b7a";
 
+const socketUrl = "wss://designercopilotservicefhlsept2023.azurewebsites.net/ws";
+
 function defaultImages() {
   return Array.from({ length: numPreviews }, () => defaultImage);
 }
@@ -85,6 +87,8 @@ export function AiImport(props: {
   const [prompts, setPrompts] = React.useState<string[]>([]);
   const [style, setStyle] = React.useState("everlane.com");
   const listRef: React.RefObject<IList> = React.useRef(null);
+  const [updates, setUpdates] = React.useState<string[]>([]);
+  const [socket, setSocket] = React.useState<WebSocket | null>(null);
   const [openAiKey, setOpenAiKey] = React.useState(
     props.clientStorage?.openAiKey
   );
@@ -161,9 +165,45 @@ export function AiImport(props: {
         setLoading(false);
       }
     }
+    setupWebSocketConnection();
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
+
   }, []);
+
+  function setupWebSocketConnection() {
+    var socketInstance = new WebSocket(socketUrl);
+    setSocket(socketInstance);
+  
+    // WebSocket onopen event handler
+    socketInstance.addEventListener("open", (event) => {
+      console.log("WebSocket connection opened:", event);
+    
+      // You can send data to the server after the connection is open
+      socketInstance.send("Hello, server!");
+    });
+    
+    // WebSocket onmessage event handler
+    socketInstance.addEventListener("message", (event) => {
+      console.log("Message from server:", event.data);
+      setUpdates(updates => [...updates, event.data])
+    });
+    
+    // WebSocket onerror event handler
+    socketInstance.addEventListener("error", (event) => {
+      console.error("WebSocket error:", event);
+    });
+    
+    // WebSocket onclose event handler
+    socketInstance.addEventListener("close", (event) => {
+      console.log("WebSocket connection closed:", event);
+    
+      // You can add reconnection logic here if needed
+    });
+    
+    // Close the WebSocket connection when you're done
+    // socket.close();
+  }
 
   function hasPreviews() {
     return previews.filter(Boolean).length > 0;
@@ -378,6 +418,8 @@ export function AiImport(props: {
     if (prompt) {
       setError(null);
       setLoading("Generating...");
+      console.log(socket);
+      socket?.send(prompt);
 
       const useLocalHtmltoFigma = false;
 
@@ -527,6 +569,13 @@ export function AiImport(props: {
       <List items={(prompts.map((p)=>({text:p}))) as IPrompt[]} onRenderCell={onRenderPrompt} componentRef={listRef}/>
       </div>
       <Separator />
+      {updates.length > 0 &&(
+        <div>
+          {updates.map((item: string, index: number) => (
+          <Text key={'Update_' + index}>{item}<br/></Text>
+          ))}
+        </div>
+      )}
       {!loading && matchingFigmaDesigns.length > 0 && (
           <div
             style={{
