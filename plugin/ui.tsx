@@ -39,8 +39,6 @@ import { deepClone, fastClone } from "./functions/fast-clone";
 import { transformWebpToPNG } from "./functions/encode-images";
 import { traverseLayers } from "./functions/traverse-layers";
 import "./ui.css";
-import { IntlProvider, FormattedMessage } from "react-intl";
-import { en, ru } from "./localize/i18n";
 import { Loading } from "./components/loading";
 import { CheckListContent } from "./constants/utils";
 import { MobileIcon } from "./components/Icons/MobileIcon";
@@ -872,21 +870,13 @@ class App extends SafeComponent {
     }
   }
 
-  getLang() {
-    return this.currentLanguage === "en" ? en : ru;
-  }
-
   switchTab = (event: any, newValue: number) => {
     this.tabIndex = newValue;
   };
 
   render() {
     return (
-      <IntlProvider
-        messages={this.currentLanguage === "en" ? en : ru}
-        locale={this.currentLanguage}
-        defaultLocale="en"
-      >
+      <>
         {/* <div
           style={{
             display: "flex",
@@ -2121,7 +2111,7 @@ class App extends SafeComponent {
             </div> */}
           {/* </div>
         </div> */}
-      </IntlProvider>
+      </>
     );
   }
   handleDevModeClick(): void {

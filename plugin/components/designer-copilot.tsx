@@ -42,6 +42,8 @@ import {
   makeStyles,
   shorthands,
   tokens,
+  webLightTheme,
+  FluentProvider,
 } from "@fluentui/react-components";
 import {
   AppFolder16Regular,
@@ -645,7 +647,7 @@ export function DesignerCopilot(props: {
       display: "flex",
       columnGap: "24px",
       flexDirection: "column",
-      height: "600px",
+      height: "500px",
     },
     latencyWrapper: {
       paddingTop: "16px",
@@ -817,9 +819,10 @@ export function DesignerCopilot(props: {
   const styles = useStyles();
 
   return (
-    <CopilotProvider className={styles.provider}>
+    <FluentProvider theme={webLightTheme}>
+    <CopilotProvider className={styles.provider} mode='canvas'>
       <Chat ref={scrollDiv} className={styles.chat}>
-        <OutputCard className={styles.card}>
+      <OutputCard className={styles.card}>
           <Body1>Hi Kat,</Body1>
 
           <Body1>
@@ -882,11 +885,6 @@ export function DesignerCopilot(props: {
           loadingState === "latency" ? (
             <LatencyWrapper className={styles.latencyWrapper}>
               <LatencyLoader header={latencyMessage} className={styles.latency}>
-                <AttachmentTag
-                  className={styles.tag}
-                  media={<Mail16Regular />}
-                  content="Marketing Campaign"
-                />
                 {latencyMessage === "Almost there..." && (
                   <AttachmentTag
                     className={styles.tag}
@@ -917,12 +915,9 @@ export function DesignerCopilot(props: {
       </Chat>
 
       <div className={styles.inputArea}>
-        <SuggestionList reload={{ onClick: handleReload }}>
+        <SuggestionList>
           <Suggestion onClick={handleSubmit}>
             Summarize my emails from Chris
-          </Suggestion>
-          <Suggestion>
-            Brainstorm ideas for virtual team bonding activity
           </Suggestion>
         </SuggestionList>
         <Textarea
@@ -933,32 +928,6 @@ export function DesignerCopilot(props: {
                 appearance="transparent"
                 icon={<SparkleRegular />}
               />
-              <AttachmentMenu>
-                <AttachmentMenuTrigger disableButtonEnhancement>
-                  <MenuButton
-                    appearance="transparent"
-                    aria-label="Attach an item"
-                    icon={<Attach16Regular />}
-                    ref={menuButtonRef}
-                    shape="circular"
-                  />
-                </AttachmentMenuTrigger>
-
-                <AttachmentMenuPopover>
-                  <AttachmentMenuList>
-                    {initialAttachments.map((attachment, index) => {
-                      return (
-                        <AttachmentMenuItem
-                          key={`Attachment-${index}`}
-                          media={attachment.media}
-                        >
-                          {attachment.content}
-                        </AttachmentMenuItem>
-                      );
-                    })}
-                  </AttachmentMenuList>
-                </AttachmentMenuPopover>
-              </AttachmentMenu>
             </>
           }
           onChange={(e, d) => setText(d.value)}
@@ -967,6 +936,7 @@ export function DesignerCopilot(props: {
         />
       </div>
     </CopilotProvider>
+    </FluentProvider>
   );
   // return (
   //   <Stack>
