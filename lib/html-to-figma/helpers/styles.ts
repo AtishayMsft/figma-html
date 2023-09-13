@@ -350,29 +350,3 @@ export const addStrokesFromBorder = ({
   }
   return undefined;
 };
-export const getShadowEffects = ({
-  computedStyle: { boxShadow },
-}: {
-  computedStyle: CSSStyleDeclaration;
-}): ShadowEffect[] | undefined => {
-  if (boxShadow && boxShadow !== "none") {
-    const parsed = parseBoxShadowStr(boxShadow);
-    const color = getRgb(parsed.color);
-    if (color) {
-      const shadowEffect: ShadowEffect = {
-        color,
-        type: "DROP_SHADOW",
-        radius: parsed.blurRadius,
-        blendMode: "NORMAL",
-        visible: true,
-        offset: {
-          x: parsed.offsetX,
-          y: parsed.offsetY,
-        },
-      };
-      return [shadowEffect];
-    }
-  }
-
-  return undefined;
-};

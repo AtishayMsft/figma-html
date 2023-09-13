@@ -49,6 +49,7 @@ import { DesktopIcon } from "./components/Icons/DesktopIcon";
 import * as amplitude from "./functions/track";
 import { v4 as uuid } from "uuid";
 import { AiImport } from "./components/ai-import";
+import { DesignerCopilot } from "./components/designer-copilot";
 import { Wand } from "./icons/wand";
 import { useDev } from "./constants/use-dev";
 import { Observable } from "@builder.io/sdk/dist/src/classes/observable.class";
@@ -1455,13 +1456,21 @@ class App extends SafeComponent {
           </TabPanel> */}
 
           {/* <TabPanel value={this.tabIndex} index={0}> */}
+            {/* Replacing the chat dialog with fluent controls.
             <AiImport
               clientStorage={this.clientStorage}
               updateClientStorage={(clientStorage) => {
                 this.clientStorage = clientStorage;
                 this.updateStorage();
               }}
-            />
+            /> */}
+              <DesignerCopilot
+              clientStorage={this.clientStorage}
+              updateClientStorage={(clientStorage) => {
+                this.clientStorage = clientStorage;
+                this.updateStorage();
+              }}
+              />
           {/* </TabPanel> */}
 
           {/* Import to Figma */}
