@@ -55,6 +55,19 @@ import {
 } from "@fluentui/react-icons";
 import { Chat, ChatMessage, ChatMyMessage } from "@fluentui-contrib/react-chat";
 
+interface CopilotMessage {
+  type: string;
+  origin: string;
+  destination: string;
+  content: string;
+  htmlOld?: string;
+  htmlNew?: string;
+  htmlDesign?: string;
+  imageOld?: string;
+  imageNew?: string;
+  imageDesign?: string;
+}
+
 initializeIcons();
 
 export const aiApiHost = useDev
@@ -109,6 +122,7 @@ const defaultImage =
   "https://cdn.builder.io/api/v1/image/assets%2FYJIGb4i01jvw0SRdL5Bt%2F72c80f114dc149019051b6852a9e3b7a";
 
 const socketUrl = "wss://designercopilotservicefhlsept2023.azurewebsites.net/ws";
+//const socketUrl = 'wss://localhost:7246/ws';
 
 function defaultImages() {
   return Array.from({ length: numPreviews }, () => defaultImage);
@@ -133,6 +147,9 @@ export function DesignerCopilot(props: {
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState<boolean | string>(false);
   const [matchingFigmaDesigns, setMatchingFigmaDesigns] = React.useState<string[]>([]);
+
+  let savedHtmlOld: string = '';
+  let savedHtmlNew: string = '';
 
   const classNames = mergeStyleSets({
     itemCell: [
@@ -208,13 +225,38 @@ export function DesignerCopilot(props: {
       console.log("WebSocket connection opened:", event);
     
       // You can send data to the server after the connection is open
-      socketInstance.send("Hello, server!");
+      const request: CopilotMessage = {
+        type: 'handshake',
+        origin: 'designer',
+        destination: 'server',
+        content: 'Starting handshake',
+      };
+      socketInstance.send(JSON.stringify(request));
     });
     
     // WebSocket onmessage event handler
     socketInstance.addEventListener("message", (event) => {
       console.log("Message from server:", event.data);
+      const response = JSON.parse(event.data) as CopilotMessage;
       setUpdates(updates => [...updates, event.data])
+      if (response.type === 'GenerateDesign' || response.type === 'GenerateDesignEngageDesigner' || response.type === 'IncorporateFeedback') {
+        savedHtmlOld = savedHtmlNew;
+        savedHtmlNew = response.htmlNew!;
+        setCardContent(
+          <>
+            <Body1>
+              {response.content}
+            </Body1>
+            <div>
+              <div>
+                <FeedbackButtons />
+              </div>
+            </div>
+          </>
+        );
+        setLoadingState("done");
+        importHtmlviabuilderApi(response.htmlNew!);
+      }
     });
     
     // WebSocket onerror event handler
@@ -575,68 +617,6 @@ export function DesignerCopilot(props: {
       setLoading(false);
     } */
   }
-
-  const initialAttachments = [
-    {
-      content: "2023 Project Planning.docx",
-      media: (
-        <Image
-          alt="DOCX file type"
-          height={20}
-          src="https://res-1.cdn.office.net/files/fabric-cdn-prod_20221209.001/assets/item-types/20/docx.svg"
-          width={20}
-        />
-      ),
-    },
-    {
-      content: "Millennium Point Request for Proposal",
-      media: <Mail20Regular />,
-    },
-    {
-      content: "Summit Center Budget.xlsx",
-      media: (
-        <Image
-          alt="XLSX file type"
-          height={20}
-          src="https://res-1.cdn.office.net/files/fabric-cdn-prod_20221209.001/assets/item-types/20/xlsx.svg"
-          width={20}
-        />
-      ),
-    },
-    {
-      content: "Summit Center Client Update - Feb 16 2023.ppt",
-      media: (
-        <Image
-          alt="PPTX file type"
-          height={20}
-          src="https://res-1.cdn.office.net/files/fabric-cdn-prod_20221209.001/assets/item-types/20/pptx.svg"
-          width={20}
-        />
-      ),
-    },
-    {
-      content: "March Sales.pdf",
-      media: (
-        <Image
-          alt="PDF file type"
-          height={20}
-          src="https://res-1.cdn.office.net/files/fabric-cdn-prod_20221209.001/assets/item-types/20/pdf.svg"
-          width={20}
-        />
-      ),
-    },
-    {
-      content: "March Sales Summary.ppt",
-      media: (
-        <Image
-          alt="PPTX file type"
-          height={20}
-          src="https://res-1.cdn.office.net/files/fabric-cdn-prod_20221209.001/assets/item-types/20/pptx.svg"
-          width={20}
-        />
-      ),
-    },
-  ];
   
   const useStyles = makeStyles({
     provider: {
@@ -726,6 +706,7 @@ export function DesignerCopilot(props: {
       campaign meeting:
     </Body1>
   );
+  const [messageList, setMessageList] = React.useState<string[]>([]);
 
   const menuButtonRef = React.useRef<HTMLButtonElement>(null);
 
@@ -734,82 +715,28 @@ export function DesignerCopilot(props: {
   };
 
   const handleSubmit = () => {
+
+    const request: CopilotMessage = {
+      type: 'request',
+      origin: 'designer',
+      destination: 'server',
+      content: text || '',
+      htmlNew: savedHtmlNew,
+      htmlOld: savedHtmlOld,
+    };
+    
+    socket!.send(JSON.stringify(request));
+
     setText("");
     setCardContent("");
-    setLatencyMessage("Reading emails");
+    setLatencyMessage("Reading the message");
     setLoadingState("latency");
     setTimeout(() => {
       setLatencyMessage("Thinking about it...");
-    }, 1500);
+    }, 6000);
     setTimeout(() => {
       setLatencyMessage("Almost there...");
     }, 3000);
-    setTimeout(() => {
-      setLoadingState("loading");
-    }, 6000);
-
-    setTimeout(() => {
-      setCardContent(
-        <Body1 block>
-          Here are some documents that have relevant information for the
-          marketing campaign meeting:
-        </Body1>
-      );
-    }, 6500);
-
-    setTimeout(() => {
-      setCardContent(
-        <>
-          <Body1 block>
-            Here are some documents that have relevant information for the
-            marketing campaign meeting:
-          </Body1>
-          <Body1>
-            <ul>
-              <li>
-                <Link>Marketing Campaign Objectives</Link> outlines goals,
-                including increasing brand awareness, increasing conversion
-                rates, and improving customer retention.
-              </li>
-            </ul>
-          </Body1>
-        </>
-      );
-    }, 7800);
-
-    setTimeout(() => {
-      setCardContent(
-        <>
-          <Body1 block>
-            Here are some documents that have relevant information for the
-            marketing campaign meeting:
-          </Body1>
-          <Body1>
-            <ul>
-              <li>
-                <Link>Marketing Campaign Objectives</Link> outlines goals,
-                including increasing brand awareness, increasing conversion
-                rates, and improving customer retention.
-              </li>
-              <li>
-                <Link>Q4 Creative Concepts</Link> proposes ideas such as
-                personalizing ads for target audiences and adding interactive
-                elements.
-              </li>
-            </ul>
-          </Body1>
-          <div>
-            <div>
-              <FeedbackButtons />
-            </div>
-          </div>
-        </>
-      );
-    }, 9000);
-
-    setTimeout(() => {
-      setLoadingState("done");
-    }, 9000);
   };
   const scrollDiv = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
@@ -864,28 +791,26 @@ export function DesignerCopilot(props: {
           body={{ className: styles.chatMyMessageBody }}
           root={{ className: styles.chatMyMessage }}
         >
-          Tell me about my day
+          Developer connected
         </ChatMyMessage>
         <ChatMessage
           body={{ className: styles.chatMessageBody }}
           root={{ className: styles.chatMessage }}
         >
-          You have 2 new messages from Chris, and 3 meetings today
+          You have 2 new messages from Chris, and 3 comments on the design
         </ChatMessage>
-        {loadingState !== undefined && (
-          <ChatMyMessage
-            body={{ className: styles.chatMyMessageBody }}
-            root={{ className: styles.chatMyMessage }}
-          >
-            Summarize my emails from Chris
-          </ChatMyMessage>
-        )}
+        <ChatMyMessage
+          body={{ className: styles.chatMyMessageBody }}
+          root={{ className: styles.chatMyMessage }}
+        >
+          Developer connected
+        </ChatMyMessage>
 
         {loadingState !== undefined ? (
           loadingState === "latency" ? (
             <LatencyWrapper className={styles.latencyWrapper}>
               <LatencyLoader header={latencyMessage} className={styles.latency}>
-                {latencyMessage === "Almost there..." && (
+                {latencyMessage === "Almost here..." && (
                   <AttachmentTag
                     className={styles.tag}
                     media={<Mail16Regular />}
@@ -917,7 +842,7 @@ export function DesignerCopilot(props: {
       <div className={styles.inputArea}>
         <SuggestionList>
           <Suggestion onClick={handleSubmit}>
-            Summarize my emails from Chris
+            Share design with my team
           </Suggestion>
         </SuggestionList>
         <Textarea
