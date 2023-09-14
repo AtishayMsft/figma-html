@@ -66,6 +66,7 @@ interface CopilotMessage {
   imageOld?: string;
   imageNew?: string;
   imageDesign?: string;
+  figmaFileId?: string;
 }
 
 initializeIcons();
@@ -104,6 +105,11 @@ function defaultPreviews() {
 
 interface IPrompt {
   text: String;
+}
+
+interface UIMessage {
+  text: String;
+  mType: String;
 }
 
 function countInstancesOf(string: string, char: string) {
@@ -148,52 +154,10 @@ export function DesignerCopilot(props: {
   const [loading, setLoading] = React.useState<boolean | string>(false);
   const [matchingFigmaDesigns, setMatchingFigmaDesigns] = React.useState<string[]>([]);
 
-  let savedHtmlOld: string = '';
-  let savedHtmlNew: string = '';
-
-  const classNames = mergeStyleSets({
-    itemCell: [
-      {
-        padding: 10,
-        boxSizing: 'border-box',
-        border: `1px solid`,
-        borderColor: '#e3f2ff',
-        margin: 10,
-        display: 'flex',
-        borderRadius: 10,
-        selectors: {
-          '&:hover': { background: "#e3f2ff" },
-        },
-      },
-    ],
-    header: {
-      marginTop: 10,
-      display: "flex"
-    },
-    commandBar: {
-      marginLeft: 10,
-      marginRight: 30,
-      paddingBottom: 4,
-      borderBottom: `4px solid`
-    },
-    container: {
-      overflow: 'auto',
-      maxHeight: 200,
-      height: !loading && matchingFigmaDesigns.length > 0 ? 100 : 230
-    },
-    icon: {
-      fontSize: 20
-    }
-  });
-
-  const onChangePrompt = React.useCallback(
-    (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
-      setPrompt(newValue || '');
-    },
-    [],
-  );
-
-  const onPromptClick = async (index?: number) => index && copyToClipboard(prompts[index]);
+  const [savedHtmlOld, setSavedHtmlOld] = React.useState<string>();
+  const [savedHtmlNew, setSavedHtmlNew] = React.useState<string>();
+  const [messageList, setMessageList] = React.useState<UIMessage[]>([]);
+  const [lastPromptOutput, setLastPromptOutput] = React.useState<string>();
 
   React.useEffect(() => {
     if (props.clientStorage) {
@@ -240,8 +204,10 @@ export function DesignerCopilot(props: {
       const response = JSON.parse(event.data) as CopilotMessage;
       setUpdates(updates => [...updates, event.data])
       if (response.type === 'GenerateDesign' || response.type === 'GenerateDesignEngageDesigner' || response.type === 'IncorporateFeedback') {
-        savedHtmlOld = savedHtmlNew;
-        savedHtmlNew = response.htmlNew!;
+        setSavedHtmlOld(savedHtmlNew);
+        setSavedHtmlNew(response.htmlNew!);
+        setLastPromptOutput(response.content);
+        console.log("SavedHtmlNew",savedHtmlNew);
         setCardContent(
           <>
             <Body1>
@@ -256,6 +222,9 @@ export function DesignerCopilot(props: {
         );
         setLoadingState("done");
         importHtmlviabuilderApi(response.htmlNew!);
+      }
+      if (response.type === 'SendDesignToProductManager' || response.type === 'SendDesignToDeveloper' || response.type === "TeamsCommunication" || response.destination === 'all') {
+        setMessageList(messageList => [...messageList, {text: response.content, mType: 'comms'}])
       }
     });
     
@@ -706,7 +675,6 @@ export function DesignerCopilot(props: {
       campaign meeting:
     </Body1>
   );
-  const [messageList, setMessageList] = React.useState<string[]>([]);
 
   const menuButtonRef = React.useRef<HTMLButtonElement>(null);
 
@@ -715,7 +683,7 @@ export function DesignerCopilot(props: {
   };
 
   const handleSubmit = () => {
-
+    console.log("SavedHtmlNew", savedHtmlNew);
     const request: CopilotMessage = {
       type: 'request',
       origin: 'designer',
@@ -723,10 +691,16 @@ export function DesignerCopilot(props: {
       content: text || '',
       htmlNew: savedHtmlNew,
       htmlOld: savedHtmlOld,
+      figmaFileId: 'Fz6kiM6aNMafkqFTsobEEs',
     };
     
     socket!.send(JSON.stringify(request));
-
+    if (lastPromptOutput) {
+      setMessageList(messageList => [...messageList, {text: lastPromptOutput!, mType: 'copilot'}, {text: text!, mType: 'my'}])
+    }
+    else {
+      setMessageList(messageList => [...messageList, {text: text!, mType: 'my'}])
+    }
     setText("");
     setCardContent("");
     setLatencyMessage("Reading the message");
@@ -787,24 +761,21 @@ export function DesignerCopilot(props: {
             button <Sparkle16Regular />
           </Body1>
         </OutputCard>
-        <ChatMyMessage
+        {messageList.map((item, index) => (
+          item.mType === 'my' ? ( 
+            <ChatMyMessage
           body={{ className: styles.chatMyMessageBody }}
           root={{ className: styles.chatMyMessage }}
         >
-          Developer connected
-        </ChatMyMessage>
-        <ChatMessage
+          {item.text}
+        </ChatMyMessage>)
+        : (<ChatMessage
           body={{ className: styles.chatMessageBody }}
           root={{ className: styles.chatMessage }}
         >
-          You have 2 new messages from Chris, and 3 comments on the design
-        </ChatMessage>
-        <ChatMyMessage
-          body={{ className: styles.chatMyMessageBody }}
-          root={{ className: styles.chatMyMessage }}
-        >
-          Developer connected
-        </ChatMyMessage>
+          {item.text}
+        </ChatMessage>)
+        ))}
 
         {loadingState !== undefined ? (
           loadingState === "latency" ? (
