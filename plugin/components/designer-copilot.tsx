@@ -13,7 +13,7 @@ import { CallOpenAI } from "../functions/azure-open-ai";
 import { getMatchingFigma } from "../functions/figma-ai-search";
 import { last } from "lodash";
 import { initializeIcons, Callout, TooltipHost, Stack, List, mergeStyleSets, TextField, PrimaryButton,Separator,FontIcon, IList } from '@fluentui/react';
-import { SparkleFilled } from '@fluentui/react-icons';
+import { SparkleFilled, PeopleTeamRegular, DesignIdeasFilled } from '@fluentui/react-icons';
 import {
   AttachmentMenu,
   AttachmentMenuItem,
@@ -44,6 +44,9 @@ import {
   tokens,
   webLightTheme,
   FluentProvider,
+  Avatar,
+  Badge,
+  Divider,
 } from "@fluentui/react-components";
 import {
   AppFolder16Regular,
@@ -109,7 +112,7 @@ interface IPrompt {
 
 interface UIMessage {
   text: String;
-  mType: String;
+  mType: String; // my, copilot, teams, workflow
 }
 
 function countInstancesOf(string: string, char: string) {
@@ -127,7 +130,7 @@ function addImagesToHtml(html: string, index: number, images: string[]) {
 const defaultImage =
   "https://cdn.builder.io/api/v1/image/assets%2FYJIGb4i01jvw0SRdL5Bt%2F72c80f114dc149019051b6852a9e3b7a";
 
-const socketUrl = "wss://designercopilotservicefhlsept2023.azurewebsites.net/ws";
+ const socketUrl = "wss://designercopilotservicefhlsept2023.azurewebsites.net/ws";
 //const socketUrl = 'wss://localhost:7246/ws';
 
 function defaultImages() {
@@ -203,7 +206,7 @@ export function DesignerCopilot(props: {
       console.log("Message from server:", event.data);
       const response = JSON.parse(event.data) as CopilotMessage;
       setUpdates(updates => [...updates, event.data])
-      if (response.type === 'GenerateDesign' || response.type === 'GenerateDesignEngageDesigner' || response.type === 'IncorporateFeedback') {
+      if (response.type === 'EngageDesigner' || response.type === 'GenerateDesign' || response.type === 'GenerateDesignEngageDesigner' || response.type === 'IncorporateFeedback') {
         setSavedHtmlOld(savedHtmlNew);
         setSavedHtmlNew(response.htmlNew!);
         setLastPromptOutput(response.content);
@@ -223,8 +226,35 @@ export function DesignerCopilot(props: {
         setLoadingState("done");
         importHtmlviabuilderApi(response.htmlNew!);
       }
-      if (response.type === 'SendDesignToProductManager' || response.type === 'SendDesignToDeveloper' || response.type === "TeamsCommunication" || response.destination === 'all') {
-        setMessageList(messageList => [...messageList, {text: response.content, mType: 'comms'}])
+      else if (response.type === 'SendDesignToProductManager' || response.type === 'SendDesignToDeveloper' || response.type === 'SendImplementationToAll') {
+        setMessageList(messageList => [...messageList, {text: response.content, mType: 'workflow'}])
+        setLoadingState("done");
+      }
+      else if (response.type === "TeamsCommunication" || response.destination === 'all') {
+        setMessageList(messageList => [...messageList, {text: response.content, mType: 'teams'}])
+        setLoadingState("done");
+      }
+      else if (response.type === 'LocalizeDesign') {
+        var content = response.content.split(',');
+        setCardContent(
+          <>
+            {content.map (c => <Body1>{c}</Body1>)}
+            <div>
+              <div>
+                <FeedbackButtons />
+              </div>
+            </div>
+          </>
+        );
+        console.log(lastPromptOutput, response.content);
+        if (response.content.indexOf("3/3") > -1) {
+          setLastPromptOutput(response.content);
+           setLoadingState("done");
+        }
+        else {
+          setLoadingState("loading");
+        }
+        importHtmlviabuilderApi(response.htmlNew!);
       }
     });
     
@@ -511,80 +541,6 @@ export function DesignerCopilot(props: {
 
     listRef.current?.scrollToIndex(prompts.length);
 
-  /*   if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
-    setPreviews(defaultPreviews());
-    fetchImages();
-
-    try {
-      const response = await fetch(`${aiApiHost}/api/v1/ai-to-figma/preview`, {
-        method: "POST",
-        signal: abortControllerRef.current.signal,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          style: style,
-          prompt: prompt,
-          key: openAiKey,
-          number: numPreviews,
-        }),
-      });
-
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder("utf-8");
-
-      const html = ["", "", "", ""];
-
-      let fullResponseText = "";
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          break;
-        }
-        const textArr = decoder.decode(value, { stream: true }).split("\n");
-
-        for (const text of textArr) {
-          fullResponseText += text;
-          if (text.startsWith("data:")) {
-            try {
-              const { index, content } = JSON.parse(text.replace("data:", ""));
-
-              html[index] += content;
-              const item = html[index];
-              // Make sure we don't stream in partial tags like `<div ...` before we close it
-              if (countInstancesOf(item, "<") === countInstancesOf(item, ">")) {
-                previews[index] = addImagesToHtml(item, index, images.current);
-
-                setPreviews([...previews]);
-              }
-            } catch (err) {
-              console.warn(`Could not parse JSON from chunk: ${text}`);
-              // Continue
-            }
-          }
-        }
-      }
-      const resJson = tryJsonParse(fullResponseText);
-      if (resJson && resJson.error) {
-        const message = resJson.error.message;
-        setError(message);
-      } else if (!hasPreviews() && fullResponseText.trim().length) {
-        setError(fullResponseText);
-      }
-    } catch (err) {
-      console.error("Error fetching previews: ", err);
-      setError(
-        `
-        We had an issue generating results. Please make sure you have a working internet connection and try again, and if this issue persists please let us know at https://github.com/BuilderIO/figma-html/issues
-      `.trim()
-      );
-    } finally {
-      setLoading(false);
-    } */
   }
   
   const useStyles = makeStyles({
@@ -596,7 +552,7 @@ export function DesignerCopilot(props: {
       display: "flex",
       columnGap: "24px",
       flexDirection: "column",
-      height: "500px",
+      height: "550px",
     },
     latencyWrapper: {
       paddingTop: "16px",
@@ -616,18 +572,25 @@ export function DesignerCopilot(props: {
         ...shorthands.borderRadius(tokens.borderRadiusMedium),
       },
       "&::-webkit-scrollbar-track": {
-        backgroundColor: tokens.colorNeutralBackground3,
+        backgroundColor: tokens.colorBrandBackground2Hover,
       },
       "&::-webkit-scrollbar": {
         width: tokens.spacingHorizontalS,
       },
     },
     chatMessage: {
-      display: "block",
+      display: "inline-flex",
       marginLeft: 0,
     },
     chatMessageBody: {
       backgroundColor: tokens.colorNeutralBackground1,
+      boxShadow: tokens.shadow4,
+      boxSizing: "content-box",
+      display: "block",
+      maxWidth: "100%",
+    },
+    chatMessageCopilotBody: {
+      backgroundColor: tokens.colorBrandBackground2Hover,
       boxShadow: tokens.shadow4,
       boxSizing: "content-box",
       display: "block",
@@ -645,6 +608,7 @@ export function DesignerCopilot(props: {
     },
     card: {
       rowGap: tokens.spacingHorizontalM,
+      backgroundColor: tokens.colorBrandBackground2,
     },
     prompts: {
       display: "flex",
@@ -670,10 +634,6 @@ export function DesignerCopilot(props: {
   const [cardContent, setCardContent] = React.useState<
     React.ReactNode | undefined
   >(
-    <Body1 block>
-      Here are some documents that have relevant information for the marketing
-      campaign meeting:
-    </Body1>
   );
 
   const menuButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -719,12 +679,13 @@ export function DesignerCopilot(props: {
 
   const styles = useStyles();
 
+  console.log(loadingState);
   return (
     <FluentProvider theme={webLightTheme}>
     <CopilotProvider className={styles.provider} mode='canvas'>
       <Chat ref={scrollDiv} className={styles.chat}>
       <OutputCard className={styles.card}>
-          <Body1>Hi Kat,</Body1>
+          <Body1>Hi Atishay,</Body1>
 
           <Body1>
             Ready to explore? Select one of the suggestions below to get
@@ -734,7 +695,7 @@ export function DesignerCopilot(props: {
           <div className={styles.prompts}>
             <PromptStarter
               icon={<AppFolder16Regular />}
-              category="Summarize"
+              category="Review"
               prompt={
                 <Body1>
                   Review key points in{" "}
@@ -746,13 +707,13 @@ export function DesignerCopilot(props: {
             <PromptStarter
               icon={<AppFolder16Regular />}
               category="Create"
-              prompt={<Body1>Write more about...</Body1>}
+              prompt={<Body1>Design more about...</Body1>}
             />
 
             <PromptStarter
               icon={<AppFolder16Regular />}
               category="Ask"
-              prompt={<Body1>Tell me about my day</Body1>}
+              prompt={<Body1>Tell me about my tasks</Body1>}
               badge="NEW"
             />
           </div>
@@ -769,12 +730,27 @@ export function DesignerCopilot(props: {
         >
           {item.text}
         </ChatMyMessage>)
-        : (<ChatMessage
+        : item.mType === 'teams' ? (<ChatMessage
+          avatar={
+            <Avatar icon={<PeopleTeamRegular />} shape="square"/>
+          }
           body={{ className: styles.chatMessageBody }}
           root={{ className: styles.chatMessage }}
         >
           {item.text}
         </ChatMessage>)
+        : item.mType === 'copilot' ? (<ChatMessage
+          avatar={
+            <Avatar icon={<DesignIdeasFilled />} badge={{ status: 'available' }} active="active"/>
+          }
+          body={{ className: styles.chatMessageCopilotBody }}
+          root={{ className: styles.chatMessage }}
+        >
+          {item.text}
+        </ChatMessage>
+        ) : (<Badge
+          appearance="outline" style={{width:'100%', marginTop:'15px'}}>{item.text}</Badge>
+        )
         ))}
 
         {loadingState !== undefined ? (
@@ -792,10 +768,12 @@ export function DesignerCopilot(props: {
               <LatencyCancel>Cancel</LatencyCancel>
             </LatencyWrapper>
           ) : (
+            <>
+            <Divider/>
             <ChatMessage
               body={{
-                children: (_, props) => (
-                  <OutputCard isLoading={loadingState === "loading"} {...props}>
+                children: (_, props) => cardContent !== '' &&(
+                  <OutputCard isLoading={loadingState === "loading"} {...props} className={styles.card}>
                     {cardContent}
                   </OutputCard>
                 ),
@@ -806,6 +784,7 @@ export function DesignerCopilot(props: {
                 className: styles.chatMessage,
               }}
             ></ChatMessage>
+            </>
           )
         ) : null}
       </Chat>
